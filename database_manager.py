@@ -68,9 +68,9 @@ class DatabaseManager:
         cursor.execute(query, params)
         self.connection.commit()
 
-    def add_product(self, name, category, unit_price,product_type, size):
+    def add_product(self, name, category, unit_price, product_type, size):
         """Add a new product to the inventory."""
-        query = "INSERT INTO products (name, category, unit_price,product_type, size) VALUES (?, ?, ?, ?)"
+        query = "INSERT INTO products (name, category, unit_price, product_type, size) VALUES (?, ?, ?, ?, ?)"
         self.execute_query(query, (name, category, unit_price, product_type, size))
         print(f"Product '{name}' added successfully.")
 
@@ -125,3 +125,4 @@ class DatabaseManager:
 # Testing the connection
 if __name__ == "__main__":
     db = DatabaseManager()
+    print(db.get_all_products())
