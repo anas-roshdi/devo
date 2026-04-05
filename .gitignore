@@ -1,1 +1,15 @@
-*.sqlite
+# Python bytecode (compiled files)
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Local Database (Safe to ignore if you want a fresh DB for others)
+devo_business.sqlite
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Excel/Report exports
+reports/*.xlsx
