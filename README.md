@@ -34,7 +34,7 @@ Version Control: Git & GitHub
 # 🚀 Installation & Setup
 
 1. Clone the repository:
-git clone https://github.com/anas-roshdi/Devo.git
+git clone https://github.com/anas-roshdi/devo.git
 
 2.Install dependencies:
 pip install -r requirements.txt
