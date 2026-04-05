@@ -3,6 +3,7 @@ Devo is a comprehensive Desktop Application designed for inventory management, s
 
 
 ✨ Features
+
 📦 Product Management: Full CRUD operations (Add, Edit, Delete) with smart categorization for Sellable and Buyable items.
 
 👥 Customer & Shop Database: Integrated registry for managing customers and shops.
@@ -16,6 +17,7 @@ Devo is a comprehensive Desktop Application designed for inventory management, s
 
 
 🛠️ Tech Stack
+
 Language: Python 3.x
 
 GUI Framework: Tkinter (Custom Styled)
@@ -27,16 +29,6 @@ Data Analysis: Pandas (for Excel Reporting & Exporting)
 Version Control: Git & GitHub
 
 
-📂 Project Structure
-DEVO/
-├── src/
-│   ├── UI/              # GUI Windows (Products, Sales, etc.)
-│   ├── database/        # Database Connection
-│   └── utils/           # Helper functions
-├── assets/              # Icons and Media Files
-├── reports/             # Generated Excel Financial Reports
-├── requirements.txt     # List of project dependencies
-└── main.py              # Application Entry Point
 
 
 🚀 Installation & Setup
