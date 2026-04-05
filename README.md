@@ -1,8 +1,8 @@
-📦 Devo - Unified Business Management System
+# 📦 Devo - Unified Business Management System
 Devo is a comprehensive Desktop Application designed for inventory management, sales tracking, and purchase invoicing. Built with Python and Tkinter, it focuses on providing a professional, modular approach to accounting data management with a seamless user experience.
 
 
-✨ Features
+# ✨ Features
 
 📦 Product Management: Full CRUD operations (Add, Edit, Delete) with smart categorization for Sellable and Buyable items.
 
@@ -16,7 +16,7 @@ Devo is a comprehensive Desktop Application designed for inventory management, s
 
 
 
-🛠️ Tech Stack
+# 🛠️ Tech Stack
 
 Language: Python 3.x
 
@@ -29,9 +29,9 @@ Data Analysis: Pandas (for Excel Reporting & Exporting)
 Version Control: Git & GitHub
 
 
+ 
 
-
-🚀 Installation & Setup
+# 🚀 Installation & Setup
 
 1. Clone the repository:
 git clone https://github.com/anas-roshdi/Devo.git
@@ -41,7 +41,7 @@ pip install -r requirements.txt
 
 3.Run the application:
 python main.py
-# Or use the provided batch file:
+ Or use the provided batch file:
 ./run_devo.bat
 
 
