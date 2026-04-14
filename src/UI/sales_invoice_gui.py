@@ -110,14 +110,46 @@ class SalesInvoiceWindow:
 
         self.combo_product['values'] = display_list
         self.combo_product.bind("<<ComboboxSelected>>", self.on_product_select)
+        self.combo_customer.bind("<<ComboboxSelected>>", self.on_product_select)
 
     def on_product_select(self, event):
-        """Automatically pre-fill the price field when a product is selected."""
+        """
+        Automatically pre-fill the price field. 
+        If it's a shop (not General Customer), fetch the last sold price for this product.
+        """
         p_name = self.combo_product.get()
-        if p_name in self.product_map:
-            default_price = self.product_map[p_name][1]
-            self.ent_price.delete(0, tk.END)
-            self.ent_price.insert(0, str(default_price))
+        customer_name = self.combo_customer.get()
+        
+        if p_name not in self.product_map:
+            return
+
+        # 1. Get the base price from the product map (default price)
+        default_price = self.product_map[p_name][1]
+        p_id = self.product_map[p_name][0]
+        final_price = default_price
+
+        # 2. Check if the customer is a specific shop/customer (not general)
+        if customer_name != "General Customer":
+            customer_id = self.customer_map.get(customer_name)
+            
+            # Query to fetch the most recent selling price for this specific customer and product
+            query = """
+                SELECT si.unit_price_sold 
+                FROM sale_items si
+                JOIN sale_invoices s ON si.invoice_id = s.invoice_id
+                WHERE s.customer_id = ? AND si.product_id = ?
+                ORDER BY s.sale_date DESC, s.invoice_id DESC
+                LIMIT 1
+            """
+            last_sale = self.db.fetch_data(query, (customer_id, p_id))
+
+            if last_sale:
+                # Use the historical price if found in the database
+                final_price = last_sale[0][0]
+
+        # 3. Populate the price entry field (remains editable for the user)
+        self.ent_price.delete(0, tk.END)
+        self.ent_price.insert(0, str(final_price))
 
     def add_to_basket(self):
         """Process and add the selected product to the temporary list and UI table."""
