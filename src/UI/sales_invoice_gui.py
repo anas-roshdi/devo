@@ -1,7 +1,9 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
+from tkcalendar import DateEntry
 from src.database.database_manager import DatabaseManager
+from src.utils.widgets import CalendarHelper
 
 class SalesInvoiceWindow:
     def __init__(self, root):
@@ -29,11 +31,19 @@ class SalesInvoiceWindow:
         self.combo_customer = ttk.Combobox(top_frame, state="readonly", width=30)
         self.combo_customer.grid(row=0, column=1, padx=10)
 
-        tk.Label(top_frame, text="Date (YYYY-MM-DD):").grid(row=0, column=2, padx=10)
+        tk.Label(top_frame, text="Date:").grid(row=0, column=2, padx=10)
+        
+        # Date field (standard Entry)
         self.ent_date = tk.Entry(top_frame, width=15)
-        # Set default date to the current date automatically
-        self.ent_date.insert(0, datetime.now().strftime("%Y-%m-%d")) 
+        self.ent_date.insert(0, datetime.now().strftime("%Y-%m-%d"))
         self.ent_date.grid(row=0, column=3)
+
+        # Button to trigger the calendar popup
+        # Use a symbol like '📅' or text like 'Date'
+        self.btn_cal = tk.Button(top_frame, text="📅", command=lambda: CalendarHelper.show_calendar(self.root, self.ent_date))
+        self.btn_cal.grid(row=0, column=4, padx=5)
+
+        
 
         # --- Middle Frame: Selection Area (Add Product to Basket) ---
         add_frame = tk.LabelFrame(self.root, text="Add Product", padx=10, pady=10)
@@ -78,6 +88,17 @@ class SalesInvoiceWindow:
         
         tk.Button(side_panel, text="Remove Selected", bg="red", fg="white",
                   command=self.remove_from_basket).pack(side="left", padx=10)
+        
+        # UI Event Bindings
+        self.combo_product.bind("<<ComboboxSelected>>", self.on_product_select)
+        self.combo_customer.bind("<<ComboboxSelected>>", self.on_product_select)
+        
+        # Keyboard Shortcuts (Enter key to add item)
+        self.ent_qty.bind("<Return>", lambda event: self.add_to_basket())
+        self.ent_price.bind("<Return>", lambda event: self.add_to_basket())
+
+        # Select all text automatically when the price field gains focus
+        self.ent_price.bind("<FocusIn>", self.select_all_price)
 
     def load_initial_data(self):
         """Fetch and populate customers and products into the dropdowns."""
@@ -109,8 +130,8 @@ class SalesInvoiceWindow:
             display_list.append(display_text)    
 
         self.combo_product['values'] = display_list
-        self.combo_product.bind("<<ComboboxSelected>>", self.on_product_select)
-        self.combo_customer.bind("<<ComboboxSelected>>", self.on_product_select)
+        
+    
 
     def on_product_select(self, event):
         """
@@ -123,12 +144,12 @@ class SalesInvoiceWindow:
         if p_name not in self.product_map:
             return
 
-        # 1. Get the base price from the product map (default price)
+        #  Get the base price from the product map (default price)
         default_price = self.product_map[p_name][1]
         p_id = self.product_map[p_name][0]
         final_price = default_price
 
-        # 2. Check if the customer is a specific shop/customer (not general)
+        #  Check if the customer is a specific shop/customer (not general)
         if customer_name != "General Customer":
             customer_id = self.customer_map.get(customer_name)
             
@@ -147,12 +168,15 @@ class SalesInvoiceWindow:
                 # Use the historical price if found in the database
                 final_price = last_sale[0][0]
 
-        # 3. Populate the price entry field (remains editable for the user)
+        # Populate the price entry field (remains editable for the user)
         self.ent_price.delete(0, tk.END)
         self.ent_price.insert(0, str(final_price))
 
-    def add_to_basket(self):
-        """Process and add the selected product to the temporary list and UI table."""
+        #  Move the cursor to the Quantity (Qty) field automatically
+        self.ent_qty.focus_set()
+
+    def add_to_basket(self, event=None):
+        """Process and add the selected product to the temporary list and UI table.Triggered by button or Enter key."""
         p_name = self.combo_product.get()
         qty_str = self.ent_qty.get()
         price_str = self.ent_price.get()
@@ -179,6 +203,15 @@ class SalesInvoiceWindow:
         except ValueError:
             messagebox.showerror("Error", "Quantity and Price must be numeric.")
 
+        # After adding, move focus back to the product combo for the next item
+        self.combo_product.focus_set()    
+    
+    def select_all_price(self, event):
+        """Select the entire content of the price entry field for easy editing."""
+        # We use after_idle to ensure the selection happens after the focus event is fully processed
+        self.root.after_idle(lambda: self.ent_price.selection_range(0, tk.END))
+        self.root.after_idle(lambda: self.ent_price.icursor(tk.END))
+        
     def update_total(self):
         """Sum the subtotals of all items currently in the basket."""
         total = sum(item['subtotal'] for item in self.basket)

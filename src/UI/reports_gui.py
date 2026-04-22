@@ -1,7 +1,9 @@
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog
 import pandas as pd # Library required for Excel file generation
+from datetime import datetime
 from src.database.database_manager import DatabaseManager
+from src.utils.widgets import CalendarHelper
 
 class ReportsWindow:
     def __init__(self, root):
@@ -28,24 +30,38 @@ class ReportsWindow:
         tk.Label(filter_frame, text="Shop:").grid(row=0, column=0)
         self.combo_customer = ttk.Combobox(filter_frame, state="readonly", width=20)
         self.combo_customer.grid(row=0, column=1, padx=5)
+        
+        # Get the current year dynamically
+        current_year = datetime.now().year
 
         tk.Label(filter_frame, text="From:").grid(row=0, column=2)
+
         self.ent_from = tk.Entry(filter_frame, width=10)
-        self.ent_from.insert(0, "2026-01-01") # Default start date for the current year
+        # Set default to January 1st of the current year
+        self.ent_from.insert(0, f"{current_year}-01-01") 
         self.ent_from.grid(row=0, column=3)
 
-        tk.Label(filter_frame, text="To:").grid(row=0, column=4)
+        # Button to trigger the calendar popup
+        # Use a symbol like '📅' or text like 'Date'
+        self.btn_from_cal = tk.Button(filter_frame, text="📅", command=lambda: CalendarHelper.show_calendar(self.root, self.ent_from))
+        self.btn_from_cal.grid(row=0, column=4, padx=5)
+
+        tk.Label(filter_frame, text="To:").grid(row=0, column=5)
         self.ent_to = tk.Entry(filter_frame, width=10)
-        self.ent_to.insert(0, "2026-12-31") # Default end date for the current year
-        self.ent_to.grid(row=0, column=5)
+        # Set default to December 31st of the current year
+        self.ent_to.insert(0, f"{current_year}-12-31") 
+        self.ent_to.grid(row=0, column=6)
+
+        # Button to trigger the calendar popup
+        # Use a symbol like '📅' or text like 'Date'
+        self.btn_to_cal = tk.Button(filter_frame, text="📅", command=lambda: CalendarHelper.show_calendar(self.root, self.ent_to))
+        self.btn_to_cal.grid(row=0, column=7, padx=5)
 
         # Action Button: Fetch and process data
-        tk.Button(filter_frame, text="Generate", bg="#2980b9", fg="white", 
-                  command=self.generate_report).grid(row=0, column=6, padx=5)
+        tk.Button(filter_frame, text="Generate", bg="#2980b9", fg="white", command=self.generate_report).grid(row=0, column=8, padx=5)
 
         # Action Button: Save current results to a .xlsx file
-        tk.Button(filter_frame, text="Export to Excel", bg="#27ae60", fg="white", 
-                  command=self.export_to_excel).grid(row=0, column=7, padx=5)
+        tk.Button(filter_frame, text="Export to Excel", bg="#27ae60", fg="white", command=self.export_to_excel).grid(row=0, column=9, padx=5)
 
         # --- Middle Frame: Summary Cards (Quick Financial Overview) ---
         summary_frame = tk.Frame(self.root)
@@ -66,6 +82,8 @@ class ReportsWindow:
             self.tree.heading(col, text=col)
             self.tree.column(col, anchor="center")
         self.tree.pack(fill="both", expand=True, padx=20, pady=10)
+    
+    
 
     def generate_report(self):
         """Fetch sales and purchases from DB and calculate financial totals."""

@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
 from src.database.database_manager import DatabaseManager
+from src.utils.widgets import CalendarHelper
 
 class PurchaseInvoiceWindow:
     def __init__(self, root):
@@ -22,18 +23,25 @@ class PurchaseInvoiceWindow:
         """Create and arrange all UI components for the Purchase Invoice."""
         
         # --- Top Frame: Supplier & Date Information ---
+        
         top_frame = tk.LabelFrame(self.root, text="Purchase Header", padx=10, pady=10)
         top_frame.pack(fill="x", padx=20, pady=10)
-
+        # Supplier
         tk.Label(top_frame, text="Supplier Name:").grid(row=0, column=0, sticky="w")
         self.ent_supplier = tk.Entry(top_frame, width=30)
         self.ent_supplier.grid(row=0, column=1, padx=10)
 
-        tk.Label(top_frame, text="Date (YYYY-MM-DD):").grid(row=0, column=2, padx=10)
+        # Date Information 
+        tk.Label(top_frame, text="Date:").grid(row=0, column=2, padx=10)
+        # Date field (standard Entry)
         self.ent_date = tk.Entry(top_frame, width=15)
-        # Set default date to today's date
         self.ent_date.insert(0, datetime.now().strftime("%Y-%m-%d"))
         self.ent_date.grid(row=0, column=3)
+        
+        # Button to trigger the calendar popup
+        # Use a symbol like '📅' or text like 'Date'
+        self.btn_cal = tk.Button(top_frame, text="📅", command=lambda: CalendarHelper.show_calendar(self.root, self.ent_date))
+        self.btn_cal.grid(row=0, column=4, padx=5)
 
         # --- Middle Frame: Selection Area (Add Product to Basket) ---
         add_frame = tk.LabelFrame(self.root, text="Add Items to Stock", padx=10, pady=10)
@@ -82,6 +90,13 @@ class PurchaseInvoiceWindow:
                   font=("Arial", 10), width=15,
                   command=self.remove_from_basket).pack(side="left", padx=10)
 
+     # Keyboard Shortcuts (Enter key to add item)
+        self.ent_qty.bind("<Return>", lambda event: self.add_to_basket())
+        self.ent_cost.bind("<Return>", lambda event: self.add_to_basket())   
+
+        # Select all text automatically when the price field gains focus
+        self.ent_cost.bind("<FocusIn>", self.select_all_price) 
+
     def load_initial_data(self):
         """Populate product list from database with dynamic text formatting."""
         # Load Products (Buyable or Both) sorted by name
@@ -108,13 +123,45 @@ class PurchaseInvoiceWindow:
         self.combo_product['values'] = display_list
         self.combo_product.bind("<<ComboboxSelected>>", self.on_product_select)
 
+    def show_calendar(self):
+        """Open a popup window to select a date. Selection is automatic on click."""
+        from tkcalendar import Calendar
+        
+        # Create a popup window
+        top = tk.Toplevel(self.root)
+        top.title("Select Date")
+        top.geometry("300x280")
+        
+        # Make the popup window modal (keeps focus until closed)
+        top.grab_set()
+
+        # Calendar widget setup
+        cal = Calendar(top, selectmode='day', 
+                       date_pattern='yyyy-mm-dd',
+                       year=datetime.now().year, 
+                       month=datetime.now().month)
+        cal.pack(fill="both", expand=True, padx=10, pady=10)
+
+        def on_date_select(event=None):
+            """Update the entry and close the popup immediately after selection."""
+            self.ent_date.delete(0, tk.END)
+            self.ent_date.insert(0, cal.get_date())
+            top.destroy()
+
+        # Bind the selection event to our function
+        # This triggers when a user clicks on any date
+        cal.bind("<<CalendarSelected>>", on_date_select)
+
     def on_product_select(self, event):
         """Auto-fill cost price field based on selected product."""
         p_name = self.combo_product.get()
         if p_name in self.product_map:
             default_cost = self.product_map[p_name][1]
             self.ent_cost.delete(0, tk.END)
-            self.ent_cost.insert(0, str(default_cost))    
+            self.ent_cost.insert(0, str(default_cost))  
+            
+            #  Move the cursor to the Quantity (Qty) field automatically
+            self.ent_qty.focus_set()  
 
     def add_to_basket(self):
         """Add current entry fields to the temporary basket and treeview."""
@@ -155,6 +202,12 @@ class PurchaseInvoiceWindow:
                 del self.basket[idx]
                 self.tree.delete(item)
             self.update_total()
+
+    def select_all_price(self, event):
+        """Select the entire content of the price entry field for easy editing."""
+        # We use after_idle to ensure the selection happens after the focus event is fully processed
+        self.root.after_idle(lambda: self.ent_cost.selection_range(0, tk.END))
+        self.root.after_idle(lambda: self.ent_cost.icursor(tk.END))
 
     def update_total(self):
         """Calculate and display the sum of all items in the current basket."""
