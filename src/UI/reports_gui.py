@@ -21,6 +21,9 @@ class ReportsWindow:
 
         self.last_search_start = None
         self.last_search_end = None
+
+        self.var_enable_forecast = tk.BooleanVar(value=False)
+        self.var_forecast_periods = tk.IntVar(value=3)
         
         # Initialize UI and load initial filtering data
         self.create_widgets()
@@ -93,6 +96,14 @@ class ReportsWindow:
         # Update the button to call a 'router' function
         tk.Button(row2, text="Show Analytics", bg="#8e44ad", fg="white", 
                   command=self.analytics_router).grid(row=0, column=4, padx=5)
+        
+        # checkbox to Enable AI Forecast
+        self.check_forecast = tk.Checkbutton(row2, text="Enable AI Forecast", variable=self.var_enable_forecast)
+        self.check_forecast.grid(row=0, column=5, padx=5, sticky="w")
+        # select forecast peroid
+        tk.Label(row2, text="Periods:").grid(row=0, column=6, padx=2)
+        self.spin_periods = tk.Spinbox(row2, from_=1, to=12, width=5, textvariable=self.var_forecast_periods)
+        self.spin_periods.grid(row=0, column=7, padx=5, sticky="w")
 
         # --- Middle Frame: Summary Cards (Quick Financial Overview) ---
         summary_frame = tk.Frame(self.root)
@@ -152,6 +163,8 @@ class ReportsWindow:
 
     def analytics_router(self):
         """Validates time constraints and routes to the selected chart."""
+        show_forecast = self.var_enable_forecast.get()
+        periods = self.var_forecast_periods.get()
         current_start = self.ent_from.get()
         current_end = self.ent_to.get()
         try:
@@ -198,7 +211,7 @@ class ReportsWindow:
 
         # Routing Logic
         if chart_type == "Profit Margin":
-            AnalyticsManager.display_profit_margin(self.current_report_data, group_type, start_dt, end_dt)
+            AnalyticsManager.display_profit_margin(self.current_report_data, group_type, start_dt, end_dt, enable_forecast=show_forecast, forecast_periods=periods)
         # Future charts will be added here
 
         
