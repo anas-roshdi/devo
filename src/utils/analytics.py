@@ -96,3 +96,38 @@ class AnalyticsManager:
                 ax.annotate(f'{height:.0f}', xy=(rect.get_x() + rect.get_width()/2, height),
                             xytext=(0, 3), textcoords="offset points", ha='center', va='bottom', 
                             fontsize=8, fontweight='bold')
+                
+    @staticmethod
+    def display_top_products(data, num_group_fields):
+        """Displays horizontal bars for top products with dynamic layout."""
+        if not data: return
+
+        names = []
+        values = []
+        
+        for row in data:
+            label = " - ".join([str(item) for item in row[:num_group_fields]])
+            names.append(label)
+            values.append(float(row[-1])) 
+            
+        names = names[::-1]
+        values = values[::-1]
+
+        # Calculate dynamic height based on the number of bars to prevent crowding
+        num_bars = len(names)
+        fig_height = max(6, num_bars * 0.4) 
+        
+        fig, ax = plt.subplots(figsize=(10, fig_height))
+        bars = ax.barh(names, values, color='#3498db')
+
+        for bar in bars:
+            width = bar.get_width()
+            ax.annotate(f' {int(width)} Units',
+                        xy=(width, bar.get_y() + bar.get_height()/2),
+                        xytext=(3, 0), textcoords="offset points",
+                        ha='left', va='center', fontweight='bold')
+
+        # Update title dynamically to reflect the actual number of displayed items
+        ax.set_title(f'Top {num_bars} Best-Selling Products', fontsize=14, fontweight='bold')
+        plt.tight_layout()
+        plt.show()

@@ -7,135 +7,151 @@ from src.utils.analytics import AnalyticsManager
 import matplotlib.pyplot as plt
 import time
 
-
 class ReportsWindow:
     def __init__(self, root):
+        """Initialize the Reports Window and core database/variable components."""
         self.root = root
         self.root.title("Devo - Financial Analytics & Export")
         self.root.geometry("850x650")
         
         # Initialize database manager instance
         self.db = DatabaseManager()
-        # List to hold the currently generated report data for Excel export
+        
+        # Storage for report data and search history
         self.current_report_data = [] 
-
         self.last_search_start = None
         self.last_search_end = None
 
+        # Initialize UI Variables for tracking states and filter values
         self.var_enable_forecast = tk.BooleanVar(value=False)
         self.var_forecast_periods = tk.IntVar(value=3)
+        self.var_grp_name = tk.BooleanVar(value=True)
+        self.var_grp_cat = tk.BooleanVar(value=False)
+        self.var_grp_size = tk.BooleanVar(value=False)
+        self.var_top_limit = tk.IntVar(value=5)
         
-        # Initialize UI and load initial filtering data
+        # Build the user interface and load initial data filters
         self.create_widgets()
         self.load_filters()
 
     def create_widgets(self):
         """Create and arrange all UI components including filters, cards, and tables."""
         
-        # --- Top Frame: Filters (Date Range & Customer Selection) ---
+        # --- Filter Section Frame ---
         filter_frame = tk.LabelFrame(self.root, text="Report Filters", padx=10, pady=10)
         filter_frame.pack(fill="x", padx=20, pady=10)
 
-        # Create two separate containers (rows) inside the main filter frame
+        # Organized rows inside the filter frame using Grid
         row1 = tk.Frame(filter_frame)
         row1.pack(fill="x", pady=5)
         
         row2 = tk.Frame(filter_frame)
         row2.pack(fill="x", pady=5)
 
+        # Row 1: 
+        # Shop Selection and Date Range
         tk.Label(row1, text="Shop:").grid(row=0, column=0)
         self.combo_customer = ttk.Combobox(row1, state="readonly", width=20)
         self.combo_customer.grid(row=0, column=1, padx=5)
         
-        # Get the current year dynamically
         current_year = datetime.now().year
-
+        
+        # Start Date Entry with Calendar Helper
         tk.Label(row1, text="From:").grid(row=0, column=2)
-
         self.ent_from = tk.Entry(row1, width=10)
-        # Set default to January 1st of the current year
         self.ent_from.insert(0, f"{current_year}-01-01") 
         self.ent_from.grid(row=0, column=3)
-
-        # Button to trigger the calendar popup
-        # Use a symbol like '📅' or text like 'Date'
         self.btn_from_cal = tk.Button(row1, text="📅", command=lambda: CalendarHelper.show_calendar(self.root, self.ent_from))
         self.btn_from_cal.grid(row=0, column=4, padx=5)
 
+        # End Date Entry with Calendar Helper
         tk.Label(row1, text="To:").grid(row=0, column=5)
         self.ent_to = tk.Entry(row1, width=10)
-        # Set default to December 31st of the current year
         self.ent_to.insert(0, f"{current_year}-12-31") 
         self.ent_to.grid(row=0, column=6)
-
-        # Button to trigger the calendar popup
-        # Use a symbol like '📅' or text like 'Date'
         self.btn_to_cal = tk.Button(row1, text="📅", command=lambda: CalendarHelper.show_calendar(self.root, self.ent_to))
         self.btn_to_cal.grid(row=0, column=7, padx=5)
 
-        # Action Button: Fetch and process data
-        tk.Button(row1, text="Generate", bg="#2980b9", fg="white", command=self.generate_report).grid(row=0, column=8, padx=5)
-
-        # Action Button: Save current results to a .xlsx file
+        # Execution Buttons
+        tk.Button(row1, text="Generate", bg="#2980b9", fg="white", command=self.generate_btn_action).grid(row=0, column=8, padx=5)
         tk.Button(row1, text="Export to Excel", bg="#27ae60", fg="white", command=self.export_to_excel).grid(row=0, column=9, padx=5)
         
-        # --- Chart Selection ---
+        # Row 2: Dynamic Analysis Options and Forecast Controls
+        # Grouping frame specifically for 'Top Products' analysis mode
+        self.frame_grouping = tk.Frame(row2)
+        self.spin_top_limit = tk.Spinbox(self.frame_grouping, from_=1, to=100, width=5, textvariable=self.var_top_limit)
+        tk.Label(self.frame_grouping, text="Limit:").pack(side=tk.LEFT)
+        self.spin_top_limit.pack(side=tk.LEFT, padx=5)
+        tk.Checkbutton(self.frame_grouping, text="Name", variable=self.var_grp_name).pack(side=tk.LEFT)
+        tk.Checkbutton(self.frame_grouping, text="Category", variable=self.var_grp_cat).pack(side=tk.LEFT)
+        tk.Checkbutton(self.frame_grouping, text="Size", variable=self.var_grp_size).pack(side=tk.LEFT)
+
+        # Chart/Analysis Mode Selector
         tk.Label(row2, text="Analysis:").grid(row=0, column=0, pady=5)
         self.combo_chart = ttk.Combobox(row2, state="readonly", width=18)
-        self.combo_chart['values'] = ("Profit Margin", "Sales Trend", "Top Customers")
+        self.combo_chart['values'] = ("Profit Margin", "Top Products")
         self.combo_chart.set("Profit Margin")
         self.combo_chart.grid(row=0, column=1, padx=5)
 
-        # --- Grouping Selection ---
-        tk.Label(row2, text="Group By:").grid(row=0, column=2)
+        # Time Grouping Selector (Weekly/Monthly)
+        self.lbl_group_by = tk.Label(row2, text="Group By:")
+        self.lbl_group_by.grid(row=0, column=2)
         self.combo_group = ttk.Combobox(row2, state="readonly", width=10)
         self.combo_group['values'] = ("Weekly", "Monthly")
         self.combo_group.set("Weekly")
         self.combo_group.grid(row=0, column=3, padx=5)
 
-        # Update the button to call a 'router' function
-        tk.Button(row2, text="Show Analytics", bg="#8e44ad", fg="white", 
-                  command=self.analytics_router).grid(row=0, column=4, padx=5)
-        
-        # checkbox to Enable AI Forecast
+        tk.Button(row2, text="Show Analytics", bg="#8e44ad", fg="white", command=self.analytics_router).grid(row=0, column=4, padx=5)
+
+        # AI Forecast Settings
         self.check_forecast = tk.Checkbutton(row2, text="Enable AI Forecast", variable=self.var_enable_forecast)
-        self.check_forecast.grid(row=0, column=5, padx=5, sticky="w")
-        # select forecast peroid
-        tk.Label(row2, text="Periods:").grid(row=0, column=6, padx=2)
+        self.check_forecast.grid(row=0, column=5, padx=5)
+        self.lbl_periods = tk.Label(row2, text="Periods:")
+        self.lbl_periods.grid(row=0, column=6)
         self.spin_periods = tk.Spinbox(row2, from_=1, to=12, width=5, textvariable=self.var_forecast_periods)
-        self.spin_periods.grid(row=0, column=7, padx=5, sticky="w")
+        self.spin_periods.grid(row=0, column=7)
 
-        # --- Middle Frame: Summary Cards (Quick Financial Overview) ---
-        summary_frame = tk.Frame(self.root)
-        summary_frame.pack(fill="x", padx=20, pady=10)
+        # Bind change event to dynamically update the UI layout
+        self.combo_chart.bind("<<ComboboxSelected>>", self.on_chart_change)
 
-        self.card_sales = tk.Label(summary_frame, text="Total Sales\n0.00", bg="#2ecc71", fg="white", font=("Arial", 11, "bold"), width=22, height=3)
+        # --- Summary Section (Using PACK) ---
+        # IMPORTANT: Summary cards use 'pack' layout. Do not use 'grid' on these items.
+        self.summary_frame = tk.Frame(self.root)
+        self.summary_frame.pack(fill="x", padx=20, pady=10)
+
+        self.card_sales = tk.Label(self.summary_frame, text="Total Sales\n0.00", bg="#2ecc71", fg="white", font=("Arial", 11, "bold"), width=22, height=3)
         self.card_sales.pack(side="left", padx=5)
 
-        self.card_purchases = tk.Label(summary_frame, text="Total Purchases\n0.00", bg="#e74c3c", fg="white", font=("Arial", 11, "bold"), width=22, height=3)
+        self.card_purchases = tk.Label(self.summary_frame, text="Total Purchases\n0.00", bg="#e74c3c", fg="white", font=("Arial", 11, "bold"), width=22, height=3)
         self.card_purchases.pack(side="left", padx=5)
 
-        self.card_profit = tk.Label(summary_frame, text="Net Profit\n0.00", bg="#f1c40f", fg="black", font=("Arial", 11, "bold"), width=22, height=3)
+        self.card_profit = tk.Label(self.summary_frame, text="Net Profit\n0.00", bg="#f1c40f", fg="black", font=("Arial", 11, "bold"), width=22, height=3)
         self.card_profit.pack(side="left", padx=5)
 
-        # --- Bottom Frame: Treeview Table for Detailed Record Display ---
+        # Specialized card for product units (hidden by default)
+        self.card_top_units = tk.Label(self.summary_frame, text="Total Units Sold\n0", bg="#34495e", fg="white", font=("Arial", 11, "bold"), width=22, height=3)
+
+        # --- Main Data Table (Treeview) ---
         self.tree = ttk.Treeview(self.root, columns=("Date", "Type", "Entity", "Amount"), show="headings")
         for col in ("Date", "Type", "Entity", "Amount"):
             self.tree.heading(col, text=col)
             self.tree.column(col, anchor="center")
         self.tree.pack(fill="both", expand=True, padx=20, pady=10)
 
-        
-    
-    
-
     def generate_report(self):
-        """Fetch sales and purchases from DB and calculate financial totals."""
+        """Fetch sales and purchase records and update the summary cards based on selection."""
         customer = self.combo_customer.get()
         start = self.ent_from.get()
         end = self.ent_to.get()
 
-        # Step 1: Fetch Sales Invoices based on date and customer filter
+        # Reset and define standard columns for financial view
+        standard_cols = ("Date", "Type", "Entity", "Amount")
+        self.tree["columns"] = standard_cols
+        for col in standard_cols:
+            self.tree.heading(col, text=col)
+            self.tree.column(col, anchor="center", width=120)
+
+        # SQL Query to retrieve sales transactions
         s_query = "SELECT sale_date, 'SALE', customers.name, total_amount FROM sale_invoices JOIN customers ON sale_invoices.customer_id = customers.customer_id WHERE sale_date BETWEEN ? AND ?"
         s_params = [start, end]
         if customer != "All Customers":
@@ -144,104 +160,150 @@ class ReportsWindow:
         
         sales = self.db.fetch_data(s_query, tuple(s_params))
         
-        # Step 2: Fetch Purchase Invoices within the date range
-        purchases = self.db.fetch_data("SELECT purchase_date, 'PURCHASE', supplier_name, total_amount FROM purchase_invoices WHERE purchase_date BETWEEN ? AND ?", (start, end))
+        # Retrieve purchases only if viewing 'All Customers' (global view)
+        if customer == "All Customers":
+            p_query = "SELECT purchase_date, 'PURCHASE', supplier_name, total_amount FROM purchase_invoices WHERE purchase_date BETWEEN ? AND ?"
+            purchases = self.db.fetch_data(p_query, (start, end))
+        else:
+            purchases = []
 
-        # Merge both datasets for display and export
+        # Merge results and populate the Treeview
         self.current_report_data = sales + purchases 
-        
-        # Clear existing table rows before inserting new data
         for i in self.tree.get_children(): self.tree.delete(i)
         for row in self.current_report_data: self.tree.insert("", "end", values=row)
         
-        # Step 3: Calculate totals and update the visual summary cards
+        # Update Sales Card
         ts = sum(s[3] for s in sales)
-        tp = sum(p[3] for p in purchases) 
         self.card_sales.config(text=f"Total Sales\n{ts:.2f}")
-        self.card_purchases.config(text=f"Total Purchases\n{tp:.2f}")
-        self.card_profit.config(text=f"Net Profit\n{(ts - tp):.2f}")
+        
+        # Update Purchase and Profit cards only for global view
+        if customer == "All Customers":
+            tp = sum(p[3] for p in purchases) 
+            # Re-display cards using PACK to maintain layout integrity
+            self.card_purchases.pack(side="left", padx=5) 
+            self.card_profit.pack(side="left", padx=5)    
+            self.card_purchases.config(text=f"Total Purchases\n{tp:.2f}")
+            self.card_profit.config(text=f"Net Profit\n{(ts - tp):.2f}")
+        else:
+            # Hide non-relevant cards for specific shop view
+            self.card_purchases.pack_forget() 
+            self.card_profit.pack_forget()
+
+    def on_chart_change(self, event=None):
+        """Dynamically toggle between Financial and Product Analysis UI layouts."""
+        mode = self.combo_chart.get()
+        if mode == "Top Products":
+            # Hide Financial/Forecast grid elements
+            self.lbl_group_by.grid_remove()
+            self.combo_group.grid_remove()
+            self.check_forecast.grid_remove()
+            self.lbl_periods.grid_remove()
+            self.spin_periods.grid_remove()
+            
+            # Hide Financial summary cards (Pack)
+            self.card_sales.pack_forget()
+            self.card_purchases.pack_forget()
+            self.card_profit.pack_forget()
+
+            # Show Top Product specific grouping and cards
+            self.frame_grouping.grid(row=0, column=2, columnspan=2, sticky="w", padx=5)
+            self.card_top_units.pack(side="left", padx=5)
+        else:
+            # Restore Financial Analysis layout
+            self.frame_grouping.grid_remove()
+            self.card_top_units.pack_forget()
+
+            self.lbl_group_by.grid()
+            self.combo_group.grid()
+            self.check_forecast.grid()
+            self.lbl_periods.grid()
+            self.spin_periods.grid()
+
+            self.card_sales.pack(side="left", padx=5)
+            self.card_purchases.pack(side="left", padx=5)
+            self.card_profit.pack(side="left", padx=5)
+
+    def generate_btn_action(self):
+        """Determine which report function to execute based on current selection."""
+        if self.combo_chart.get() == "Top Products":
+            self.fetch_and_display_top_products()
+        else:
+            self.generate_report()
 
     def analytics_router(self):
-        """Validates time constraints and routes to the selected chart."""
-        show_forecast = self.var_enable_forecast.get()
-        periods = self.var_forecast_periods.get()
+        """Route to appropriate AnalyticsManager function for chart generation."""
         current_start = self.ent_from.get()
         current_end = self.ent_to.get()
+        chart_type = self.combo_chart.get()
         try:
-            start_dt = datetime.strptime(self.ent_from.get(), "%Y-%m-%d")
-            end_dt = datetime.strptime(self.ent_to.get(), "%Y-%m-%d")
+            start_dt = datetime.strptime(current_start, "%Y-%m-%d")
+            end_dt = datetime.strptime(current_end, "%Y-%m-%d")
         except ValueError:
             messagebox.showerror("Error", "Invalid date format.")
             return
+
+        if chart_type == "Top Products":
+            data = self.fetch_and_display_top_products()
+            if data:
+                # num_fields defines the descriptive columns before the 'Quantity' column
+                AnalyticsManager.display_top_products(data, len(data[0]) - 1)
+        elif chart_type == "Profit Margin":
+            # Refresh data if filters have changed
+            if not self.current_report_data or current_start != self.last_search_start:
+                self.generate_report()
+            AnalyticsManager.display_profit_margin(self.current_report_data, self.combo_group.get(), start_dt, end_dt, self.var_enable_forecast.get(), self.var_forecast_periods.get())
+
+    def fetch_and_display_top_products(self):
+        """Retrieve top selling products based on dynamic grouping (Name, Category, Size)."""
+        group_fields = []
+        if self.var_grp_name.get(): group_fields.append('name')
+        if self.var_grp_cat.get(): group_fields.append('category')
+        if self.var_grp_size.get(): group_fields.append('size')
+        if not group_fields: group_fields = ['name'] # Default fallback
+
+        # Fetch data from database
+        top_products = self.db.get_top_products_dynamic(self.ent_from.get(), self.ent_to.get(), group_fields, self.combo_customer.get(), self.var_top_limit.get())
         
-        if not self.current_report_data: 
-            print("Current data is empty, generating report now...") # English log
-            self.generate_report()
+        if not top_products:
+            messagebox.showinfo("No Data", "No product sales found.")
+            return None 
 
-        if not self.current_report_data:
-            messagebox.showwarning("No Data", "No data available to analyze.")
-            return    
-
-        delta_days = (end_dt - start_dt).days
-        group_type = self.combo_group.get()
-        chart_type = self.combo_chart.get()
-        selected_shop = self.combo_customer.get()
-
-        if chart_type == "Profit Margin" and selected_shop != "All Customers":
-            messagebox.showwarning("Logic Error", 
-                "Profit Margin analysis compares total purchases vs sales. Please set Shop to 'All Customers'.")
-            return
+        # Update product statistics card
+        self.card_top_units.config(text=f"Total Units Sold\n{int(sum(row[-1] for row in top_products))}")
         
-
-        # Validation Logic
-        if group_type == "Weekly" and delta_days < 14:
-            messagebox.showwarning("Range Error", "Weekly grouping requires at least 14 days.")
-            return
-        elif group_type == "Monthly" and delta_days < 60:
-            messagebox.showwarning("Range Error", "Monthly grouping requires at least 60 days (2 months).")
-            return
-        # Check if date filters have changed since the last successful search
-        if current_start != self.last_search_start or current_end != self.last_search_end:
-            # Force refresh data to ensure charts match the current UI filters
-            self.generate_report()
-
-            # Update the last search timestamps to prevent redundant fetches
-            self.last_search_start = current_start
-            self.last_search_end = current_end
-
-        # Routing Logic
-        if chart_type == "Profit Margin":
-            AnalyticsManager.display_profit_margin(self.current_report_data, group_type, start_dt, end_dt, enable_forecast=show_forecast, forecast_periods=periods)
-        # Future charts will be added here
-
-        
-    def export_to_excel(self):
-        import pandas as pd # Library required for Excel file generation
-        """Convert current report list into a DataFrame and export to Excel (.xlsx)."""
-        if not self.current_report_data:
-            messagebox.showwarning("No Data", "Please generate a report first before exporting.")
-            return
-
-        # Open file dialog for the user to choose save location
-        file_path = filedialog.asksaveasfilename(defaultextension=".xlsx", 
-                                                filetypes=[("Excel files", "*.xlsx")])
-        if file_path:
-            try:
-                # Convert the data list to a pandas DataFrame with specified column headers
-                df = pd.DataFrame(self.current_report_data, columns=["Date", "Type", "Client/Supplier", "Amount"])
-                
-                # Perform the export to Excel
-                df.to_excel(file_path, index=False)
-                messagebox.showinfo("Export Success", f"Report successfully saved to:\n{file_path}")
-            except Exception as e:
-                messagebox.showerror("Export Error", f"Could not save file: {e}")
+        # Dynamically rebuild Treeview columns based on selected groupings
+        col_names = [f.title() for f in group_fields] + ["Qty Sold"]
+        self.tree["columns"] = tuple(col_names)
+        for col in col_names:
+            self.tree.heading(col, text=col)
+            self.tree.column(col, anchor="center", width=150)
+            
+        self.tree.delete(*self.tree.get_children())
+        for row in top_products: self.tree.insert("", tk.END, values=row)
+        return top_products
 
     def load_filters(self):
-        """Load available customer names into the dropdown filter."""
+        """Fetch all customers from DB and populate the shop filter dropdown."""
         customers = self.db.get_all_customers()
         self.combo_customer['values'] = ["All Customers"] + [c[1] for c in customers]
         self.combo_customer.set("All Customers")
 
+    def export_to_excel(self):
+        """Export the current viewable report data to an Excel spreadsheet."""
+        import pandas as pd
+        if not self.current_report_data: 
+            messagebox.showwarning("Empty", "No data to export.")
+            return
+        
+        file_path = filedialog.asksaveasfilename(defaultextension=".xlsx")
+        if file_path:
+            try:
+                pd.DataFrame(self.current_report_data).to_excel(file_path, index=False)
+                messagebox.showinfo("Success", "Report exported successfully.")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to export: {e}")
+
+# Entry point for testing the module directly
 if __name__ == "__main__":
     root = tk.Tk()
     app = ReportsWindow(root)

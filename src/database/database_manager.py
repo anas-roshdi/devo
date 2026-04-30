@@ -126,6 +126,57 @@ class DatabaseManager:
         params = (name, category, price, p_type, size)
         self.execute_query(query, params)
 
+    def get_top_products_by_date(self, start_date, end_date):
+        """Fetches the top 5 products based on total quantity sold within a date range."""
+        query = """
+            SELECT p.name, SUM(si.quantity) as total_qty
+            FROM sale_items si
+            JOIN products p ON si.product_id = p.product_id
+            JOIN sale_invoices i ON si.invoice_id = i.invoice_id
+            WHERE i.sale_date BETWEEN ? AND ?
+            GROUP BY p.name
+            ORDER BY total_qty DESC
+            LIMIT 5
+        """
+        # We use fetch_data because it already returns cursor.fetchall()
+        return self.fetch_data(query, (start_date, end_date))
+
+    def get_top_products_dynamic(self, start_date, end_date, group_fields, store_name, limit_num):
+        """
+        Fetches top products dynamically with store filter and custom limit.
+        """
+        if not group_fields:
+            group_fields = ['name'] 
+            
+        select_cols = ", ".join([f"p.{field}" for field in group_fields])
+        group_cols = ", ".join([f"p.{field}" for field in group_fields])
+        
+        # Base query joining customers (Assuming customers represent stores/entities)
+        query = f"""
+            SELECT {select_cols}, SUM(si.quantity) as total_qty
+            FROM sale_items si
+            JOIN products p ON si.product_id = p.product_id
+            JOIN sale_invoices i ON si.invoice_id = i.invoice_id
+            JOIN customers c ON i.customer_id = c.customer_id
+            WHERE i.sale_date BETWEEN ? AND ?
+        """
+        params = [start_date, end_date]
+        
+        # Add store filter if a specific store is selected
+        if store_name and store_name != "All Customers": 
+            query += " AND c.name = ?"
+            params.append(store_name)
+            
+        # Add GROUP BY, ORDER BY, and dynamic LIMIT
+        query += f"""
+            GROUP BY {group_cols}
+            ORDER BY total_qty DESC
+            LIMIT ?
+        """
+        params.append(limit_num)
+        
+        return self.fetch_data(query, tuple(params))
+
 # Testing the connection
 if __name__ == "__main__":
     db = DatabaseManager()
