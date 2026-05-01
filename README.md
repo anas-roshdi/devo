@@ -27,7 +27,9 @@ Devo is a comprehensive, AI-enhanced Desktop Application designed for inventory 
    ```bash
    git clone [https://github.com/anas-roshdi/devo.git](https://github.com/anas-roshdi/devo.git)
 2. Install dependencies:
+   ```bash
    pip install -r requirements.txt
-3.  Run the application:
+4.  Run the application:
+    ```bash
     python main.py
     Or use the provided batch file: ./run_devo.bat
