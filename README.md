@@ -32,5 +32,4 @@ Devo is a comprehensive, AI-enhanced Desktop Application designed for inventory 
 4.  Run the application:
     ```bash
     python main.py
-    
-    Or use the provided batch file: ./run_devo.bat
+   Or use the provided batch file: ./run_devo.bat
