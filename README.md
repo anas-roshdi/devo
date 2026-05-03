@@ -1,8 +1,12 @@
 # 📦 Devo - Unified Business Management System
 
+<p align="center">
+  <img src="screenshots/Homepage.png" alt="Devo Dashboard" width="700">
+</p>
+
 Devo is a comprehensive, AI-enhanced Desktop Application designed for inventory management, sales tracking, predictive analytics, and purchase invoicing. Built with Python and Tkinter, it focuses on providing a professional, modular approach to accounting data management with a seamless user experience and advanced data visualization.
 
-# ✨ Features
+## ✨ Features
 
 *   **📦 Product Management:** Full CRUD operations (Add, Edit, Delete) with categorization for Sellable and Buyable items.
 *   **👥 Customer & Shop Database:** Integrated registry for managing customers and shops efficiently.
@@ -12,7 +16,7 @@ Devo is a comprehensive, AI-enhanced Desktop Application designed for inventory 
 *   **📊 Financial Reports:** Generate accurate financial summaries, analyze trends, and export them to Excel for advanced accounting reviews.
 *   **🗄️ Robust Data Handling:** Powered by SQLite to ensure fast, reliable, and secure local data storage, with a modular analytics architecture for high performance.
 
-# 🛠️ Tech Stack
+## 🛠️ Tech Stack
 
 *   **Language:** Python 3.x
 *   **GUI Framework:** Tkinter (Custom Styled)
@@ -21,7 +25,29 @@ Devo is a comprehensive, AI-enhanced Desktop Application designed for inventory 
 *   **Data Analysis & Visualization:** Pandas, Matplotlib
 *   **Version Control:** Git & GitHub
 
-# 🚀 Installation & Setup
+## 🎨 System Screenshots
+
+### 🖥️ Core Management
+| Product Inventory System | Customer & Shop Management |
+| :---: | :---: |
+| ![Products](screenshots/ProductManagment.png) | ![Customers](screenshots/CustomerManagment.png) |
+
+### 🛒 Smart Invoicing
+| Smart Sales Invoice | Smart Purchase Invoice |
+| :---: | :---: |
+| ![Sales](screenshots/SalesInvoice.png) | ![Purchase](screenshots/PurchaseInvoice.png) |
+
+### 📊 Financial Analytics & Reports
+| Comprehensive Analytics | Top Products Report |
+| :---: | :---: |
+| ![Report](screenshots/Report.png) | ![Report 2](screenshots/Report2.png) |
+
+### 📈 AI Forecasting & Data Visualization
+| Profit Margin & AI Forecast | Top Best-Selling Products |
+| :---: | :---: |
+| ![AI Forecast](screenshots/devo-cover.png) | ![Top Products Chart](screenshots/TopProducts.png) |
+
+## 🚀 Installation & Setup
 
 1. Clone the repository:
    ```bash
