@@ -32,8 +32,8 @@ Devo is a comprehensive, AI-enhanced Desktop Application designed for inventory 
 | :---: | :---: |
 | ![Products](screenshots/ProductManagment.png) | ![Customers](screenshots/CustomerManagment.png) |
 
-### 🛒 Smart Invoicing
-| Smart Sales Invoice | Smart Purchase Invoice |
+### 🛒 Invoicing
+| Sales Invoice | Purchase Invoice |
 | :---: | :---: |
 | ![Sales](screenshots/SalesInvoice.png) | ![Purchase](screenshots/PurchaseInvoice.png) |
 
