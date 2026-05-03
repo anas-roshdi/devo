@@ -3,6 +3,8 @@ from datetime import datetime, timedelta
 import numpy as np
 from sklearn.linear_model import LinearRegression
 import time
+import arabic_reshaper
+from bidi.algorithm import get_display
 
 class AnalyticsManager:
     @staticmethod
@@ -98,36 +100,62 @@ class AnalyticsManager:
                             fontsize=8, fontweight='bold')
                 
     @staticmethod
-    def display_top_products(data, num_group_fields):
-        """Displays horizontal bars for top products with dynamic layout."""
-        if not data: return
+    def display_top_products(data, num_fields):
+        """
+        Generates a horizontal bar chart for the top selling products.
+        Includes support for proper rendering of Arabic text in Matplotlib.
+        """
+        # Import required libraries for plotting and Arabic text rendering
+        import matplotlib.pyplot as plt
+        import arabic_reshaper
+        from bidi.algorithm import get_display
 
-        names = []
+        # Ensure a font that supports Arabic characters is used globally (e.g., Arial, Tahoma)
+        plt.rcParams['font.family'] = 'Arial' 
+
+        labels = []
         values = []
-        
+
+        # Process the data rows dynamically based on the selected group fields
         for row in data:
-            label = " - ".join([str(item) for item in row[:num_group_fields]])
-            names.append(label)
-            values.append(float(row[-1])) 
+            # Combine the selected text fields (e.g., Name, Category) into a single string
+            raw_label = " - ".join(str(item) for item in row[:num_fields])
             
-        names = names[::-1]
-        values = values[::-1]
+            # Fix Arabic text rendering issues (reshaping and Right-to-Left direction)
+            reshaped_text = arabic_reshaper.reshape(raw_label)
+            bidi_text = get_display(reshaped_text)
+            
+            # Append the corrected text and the quantity value
+            labels.append(bidi_text)
+            values.append(row[-1]) # The last element is always the total quantity
 
-        # Calculate dynamic height based on the number of bars to prevent crowding
-        num_bars = len(names)
-        fig_height = max(6, num_bars * 0.4) 
+        # Create the figure and axis for the chart
+        fig, ax = plt.subplots(figsize=(10, 6))
         
-        fig, ax = plt.subplots(figsize=(10, fig_height))
-        bars = ax.barh(names, values, color='#3498db')
+        # Plot the horizontal bar chart
+        bars = ax.barh(labels, values, color='#3498db')
+        
+        # Invert the Y-axis so the product with the highest sales appears at the very top
+        ax.invert_yaxis()
 
+        # Add data labels (e.g., "523 Units") at the end of each bar for better readability
+        max_value = max(values) if values else 1
         for bar in bars:
             width = bar.get_width()
-            ax.annotate(f' {int(width)} Units',
-                        xy=(width, bar.get_y() + bar.get_height()/2),
-                        xytext=(3, 0), textcoords="offset points",
-                        ha='left', va='center', fontweight='bold')
+            # Calculate a slight offset based on the maximum value to position the text nicely
+            offset = max_value * 0.01
+            
+            ax.text(width + offset, 
+                    bar.get_y() + bar.get_height() / 2, 
+                    f'{int(width)} Units', 
+                    ha='left', 
+                    va='center', 
+                    fontweight='bold')
 
-        # Update title dynamically to reflect the actual number of displayed items
-        ax.set_title(f'Top {num_bars} Best-Selling Products', fontsize=14, fontweight='bold')
+        # Set chart title and labels
+        ax.set_title("Top Best-Selling Products", fontsize=16, fontweight='bold')
+        ax.set_xlabel("Total Quantity Sold", fontweight='bold')
+        
+        # Adjust layout to prevent label cropping and display the chart
         plt.tight_layout()
         plt.show()

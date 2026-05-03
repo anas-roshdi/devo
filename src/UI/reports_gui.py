@@ -101,15 +101,17 @@ class ReportsWindow:
         self.combo_group.set("Weekly")
         self.combo_group.grid(row=0, column=3, padx=5)
 
-        tk.Button(row2, text="Show Analytics", bg="#8e44ad", fg="white", command=self.analytics_router).grid(row=0, column=4, padx=5)
-
         # AI Forecast Settings
-        self.check_forecast = tk.Checkbutton(row2, text="Enable AI Forecast", variable=self.var_enable_forecast)
-        self.check_forecast.grid(row=0, column=5, padx=5)
+        self.forecast_sub_frame = tk.Frame(row2)
+        self.forecast_sub_frame.grid(row=0, column=4, padx=5)
+        tk.Label(self.forecast_sub_frame, text="Enable AI Forecast").pack(side="left")
+        self.check_forecast = tk.Checkbutton(self.forecast_sub_frame, variable=self.var_enable_forecast)
+        self.check_forecast.pack(side="left")
         self.lbl_periods = tk.Label(row2, text="Periods:")
-        self.lbl_periods.grid(row=0, column=6)
+        self.lbl_periods.grid(row=0, column=5)
         self.spin_periods = tk.Spinbox(row2, from_=1, to=12, width=5, textvariable=self.var_forecast_periods)
-        self.spin_periods.grid(row=0, column=7)
+        self.spin_periods.grid(row=0, column=6)
+        tk.Button(row2, text="Show Analytics", bg="#8e44ad", fg="white", command=self.analytics_router).grid(row=0, column=7, padx=5)
 
         # Bind change event to dynamically update the UI layout
         self.combo_chart.bind("<<ComboboxSelected>>", self.on_chart_change)
@@ -196,7 +198,7 @@ class ReportsWindow:
             # Hide Financial/Forecast grid elements
             self.lbl_group_by.grid_remove()
             self.combo_group.grid_remove()
-            self.check_forecast.grid_remove()
+            self.forecast_sub_frame.grid_remove()  # Hide the entire frame (checkbox + text)
             self.lbl_periods.grid_remove()
             self.spin_periods.grid_remove()
             
@@ -215,13 +217,15 @@ class ReportsWindow:
 
             self.lbl_group_by.grid()
             self.combo_group.grid()
-            self.check_forecast.grid()
+            self.forecast_sub_frame.grid()  # Restore the entire frame
             self.lbl_periods.grid()
             self.spin_periods.grid()
 
+            # Restore cards logically based on customer selection
             self.card_sales.pack(side="left", padx=5)
-            self.card_purchases.pack(side="left", padx=5)
-            self.card_profit.pack(side="left", padx=5)
+            if self.combo_customer.get() == "All Customers":
+                self.card_purchases.pack(side="left", padx=5)
+                self.card_profit.pack(side="left", padx=5)
 
     def generate_btn_action(self):
         """Determine which report function to execute based on current selection."""
