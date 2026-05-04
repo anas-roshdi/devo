@@ -1,12 +1,24 @@
+"""
+Customer & Shop Management Window.
+====================================
+CRUD operations for managing customers and shops.
+All database operations go through DatabaseManager methods.
+"""
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 from src.database.database_manager import DatabaseManager
+from config import Colors, Fonts, WindowConfig, DEFAULT_CUSTOMER
+
 
 class CustomerWindow:
     def __init__(self, root):
         self.root = root
         self.root.title("Devo - Customer & Shop Management")
-        self.root.geometry("700x500")
+        
+        geo, min_w, min_h = WindowConfig.CUSTOMERS
+        self.root.geometry(geo)
+        self.root.minsize(min_w, min_h)
         
         # Initialize database manager instance
         self.db = DatabaseManager()
@@ -18,9 +30,13 @@ class CustomerWindow:
     def create_widgets(self):
         """Setup UI layout including entry forms and the customer table."""
         
+        # --- Main container using PanedWindow for responsive layout ---
+        paned = tk.PanedWindow(self.root, orient=tk.HORIZONTAL, sashwidth=5)
+        paned.pack(fill="both", expand=True, padx=10, pady=10)
+
         # --- Left Side: Input Form Frame ---
-        form_frame = tk.LabelFrame(self.root, text="Customer Information", padx=10, pady=10)
-        form_frame.place(x=20, y=20, width=250, height=450)
+        form_frame = tk.LabelFrame(paned, text="Customer Information", padx=10, pady=10)
+        paned.add(form_frame, minsize=220)
 
         tk.Label(form_frame, text="Shop/Customer Name:").pack(anchor="w")
         self.ent_name = tk.Entry(form_frame)
@@ -35,18 +51,18 @@ class CustomerWindow:
         self.ent_address.pack(fill="x", pady=5)
 
         # Action Buttons for CRUD operations
-        tk.Button(form_frame, text="Add Customer", bg="green", fg="white", 
+        tk.Button(form_frame, text="Add Customer", bg=Colors.GREEN_DARK, fg=Colors.TEXT_WHITE,
                   command=self.add_customer).pack(fill="x", pady=10)
         
-        tk.Button(form_frame, text="Update Selected", bg="orange", 
+        tk.Button(form_frame, text="Update Selected", bg=Colors.ORANGE,
                   command=self.update_customer).pack(fill="x", pady=5)
         
-        tk.Button(form_frame, text="Delete Customer", bg="red", fg="white", 
+        tk.Button(form_frame, text="Delete Customer", bg=Colors.RED, fg=Colors.TEXT_WHITE,
                   command=self.delete_customer).pack(fill="x", pady=5)
 
         # --- Right Side: Customer Data Table (Treeview) ---
-        table_frame = tk.Frame(self.root)
-        table_frame.place(x=290, y=30, width=380, height=440)
+        table_frame = tk.Frame(paned)
+        paned.add(table_frame, minsize=300)
 
         columns = ("ID", "Name", "Phone", "Address")
         self.tree = ttk.Treeview(table_frame, columns=columns, show="headings")
@@ -56,7 +72,13 @@ class CustomerWindow:
             self.tree.heading(col, text=col)
             self.tree.column(col, width=80, anchor="center")
         
-        self.tree.pack(fill="both", expand=True)
+        self.tree.pack(side="left", fill="both", expand=True)
+        
+        # Scrollbar
+        scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
+        
         # Bind table selection event to form population logic
         self.tree.bind("<<TreeviewSelect>>", self.on_select)
 
@@ -80,8 +102,7 @@ class CustomerWindow:
 
         if name:
             try:
-                query = "INSERT INTO customers (name, phone, address) VALUES (?, ?, ?)"
-                self.db.execute_query(query, (name, phone, address))
+                self.db.add_customer(name, phone, address)
                 messagebox.showinfo("Success", f"Customer '{name}' added successfully.")
                 self.clear_fields()
                 self.load_customers()
@@ -112,8 +133,7 @@ class CustomerWindow:
 
         c_id = self.tree.item(selected, "values")[0]
         try:
-            query = "UPDATE customers SET name=?, phone=?, address=? WHERE customer_id=?"
-            self.db.execute_query(query, (self.ent_name.get(), self.ent_phone.get(), self.ent_address.get(), c_id))
+            self.db.update_customer(c_id, self.ent_name.get(), self.ent_phone.get(), self.ent_address.get())
             messagebox.showinfo("Updated", "Customer information has been updated.")
             self.load_customers()
         except Exception as e:
@@ -129,13 +149,13 @@ class CustomerWindow:
         name = values[1]
         
         # Safeguard: Prevent deletion of the default 'General Customer'
-        if name == "General Customer":
-            messagebox.showerror("Error", "The default 'General Customer' record cannot be deleted.")
+        if name == DEFAULT_CUSTOMER:
+            messagebox.showerror("Error", f"The default '{DEFAULT_CUSTOMER}' record cannot be deleted.")
             return
 
         if messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete '{name}'?"):
             try:
-                self.db.execute_query("DELETE FROM customers WHERE customer_id=?", (c_id,))
+                self.db.delete_customer(c_id)
                 self.load_customers()
                 self.clear_fields()
             except Exception as e:

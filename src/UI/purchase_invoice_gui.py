@@ -1,255 +1,97 @@
+"""
+Purchase Invoice Window - Handles creating and saving purchase invoices.
+========================================================================
+Inherits from BaseInvoiceWindow for shared invoice functionality.
+Adds: supplier name entry, purchase-specific pricing and saving.
+"""
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import datetime
-from src.database.database_manager import DatabaseManager
+from src.UI.base_invoice import BaseInvoiceWindow
 from src.utils.widgets import CalendarHelper
+from config import Colors, Fonts, WindowConfig, UNKNOWN_SUPPLIER
 
-class PurchaseInvoiceWindow:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Devo - Smart Purchase Invoice")
-        self.root.geometry("900x600")
-        
-        # Initialize database connection
-        self.db = DatabaseManager()
-        # Temporary list to store products before saving to database
-        self.basket = []  
-        
-        # Build UI and load products from DB
-        self.create_widgets()
-        self.load_initial_data()
 
-    def create_widgets(self):
-        """Create and arrange all UI components for the Purchase Invoice."""
-        
-        # --- Top Frame: Supplier & Date Information ---
-        
+class PurchaseInvoiceWindow(BaseInvoiceWindow):
+    """Purchase invoice window with supplier entry and cost-based pricing."""
+
+    # =========================================================
+    # CONFIGURATION OVERRIDES
+    # =========================================================
+
+    def get_window_title(self):
+        return "Devo - Smart Purchase Invoice"
+
+    def get_window_geometry(self):
+        return WindowConfig.PURCHASE_INVOICE
+
+    def get_product_type(self):
+        return "buyable"
+
+    def get_confirm_button_config(self):
+        return ("Confirm Purchase", Colors.RED_DARK)
+
+    def get_total_label_config(self):
+        return ("Total Cost:", Colors.RED)
+
+    def get_price_label(self):
+        return "Cost Price"
+
+    def get_basket_item_dict(self, p_id, p_name, qty, price, subtotal):
+        """Override to use 'cost' key instead of 'price' for purchase items."""
+        return {'id': p_id, 'name': p_name, 'qty': qty, 'cost': price, 'subtotal': subtotal}
+
+    # =========================================================
+    # HEADER: Supplier & Date Entry
+    # =========================================================
+
+    def create_header_frame(self):
+        """Create the top frame with supplier name entry and date picker."""
         top_frame = tk.LabelFrame(self.root, text="Purchase Header", padx=10, pady=10)
         top_frame.pack(fill="x", padx=20, pady=10)
+
         # Supplier
         tk.Label(top_frame, text="Supplier Name:").grid(row=0, column=0, sticky="w")
         self.ent_supplier = tk.Entry(top_frame, width=30)
         self.ent_supplier.grid(row=0, column=1, padx=10)
 
-        # Date Information 
+        # Date
         tk.Label(top_frame, text="Date:").grid(row=0, column=2, padx=10)
-        # Date field (standard Entry)
         self.ent_date = tk.Entry(top_frame, width=15)
         self.ent_date.insert(0, datetime.now().strftime("%Y-%m-%d"))
         self.ent_date.grid(row=0, column=3)
-        
-        # Button to trigger the calendar popup
-        # Use a symbol like '📅' or text like 'Date'
-        self.btn_cal = tk.Button(top_frame, text="📅", command=lambda: CalendarHelper.show_calendar(self.root, self.ent_date))
-        self.btn_cal.grid(row=0, column=4, padx=5)
 
-        # --- Middle Frame: Selection Area (Add Product to Basket) ---
-        add_frame = tk.LabelFrame(self.root, text="Add Items to Stock", padx=10, pady=10)
-        add_frame.pack(fill="x", padx=20, pady=5)
+        # Calendar popup button
+        tk.Button(top_frame, text="📅",
+                  command=lambda: CalendarHelper.show_calendar(self.root, self.ent_date)
+                  ).grid(row=0, column=4, padx=5)
 
-        tk.Label(add_frame, text="Product:").grid(row=0, column=0)
-        self.combo_product = ttk.Combobox(add_frame, state="readonly", width=25)
-        self.combo_product.grid(row=0, column=1, padx=5)
-        
-        tk.Label(add_frame, text="Qty:").grid(row=0, column=2)
-        self.ent_qty = tk.Entry(add_frame, width=10)
-        self.ent_qty.grid(row=0, column=3, padx=5)
+    # =========================================================
+    # SAVE INVOICE
+    # =========================================================
 
-        tk.Label(add_frame, text="Cost Price:").grid(row=0, column=4)
-        self.ent_cost = tk.Entry(add_frame, width=10)
-        self.ent_cost.grid(row=0, column=5, padx=5)
-
-        tk.Button(add_frame, text="Add to Basket", bg="#3498db", fg="white", 
-                  font=("Arial", 9, "bold"), command=self.add_to_basket).grid(row=0, column=6, padx=15)
-
-        # --- Bottom Frame: Treeview Table for Items ---
-        table_frame = tk.Frame(self.root)
-        table_frame.pack(fill="both", expand=True, padx=20, pady=10)
-
-        columns = ("ID", "Product Name", "Qty", "Cost Price", "Subtotal")
-        self.tree = ttk.Treeview(table_frame, columns=columns, show="headings")
-        for col in columns:
-            self.tree.heading(col, text=col)
-            self.tree.column(col, width=100, anchor="center")
-        
-        self.tree.pack(side="left", fill="both", expand=True)
-
-        # --- Footer Section: Total and Actions ---
-        footer_panel = tk.Frame(self.root, padx=20, pady=10)
-        footer_panel.pack(fill="x")
-
-        self.lbl_total = tk.Label(footer_panel, text="Total Cost: 0.00", 
-                                 font=("Arial", 14, "bold"), fg="#e74c3c")
-        self.lbl_total.pack(side="right")
-
-        tk.Button(footer_panel, text="Confirm Purchase", bg="#c0392b", fg="white", 
-                  font=("Arial", 12, "bold"), width=18,
-                  command=self.save_purchase_invoice).pack(side="left", pady=10)
-
-        tk.Button(footer_panel, text="Remove Selected", bg="#f39c12", fg="black",
-                  font=("Arial", 10), width=15,
-                  command=self.remove_from_basket).pack(side="left", padx=10)
-
-     # Keyboard Shortcuts (Enter key to add item)
-        self.ent_qty.bind("<Return>", lambda event: self.add_to_basket())
-        self.ent_cost.bind("<Return>", lambda event: self.add_to_basket())   
-
-        # Select all text automatically when the price field gains focus
-        self.ent_cost.bind("<FocusIn>", self.select_all_price) 
-
-    def load_initial_data(self):
-        """Populate product list from database with dynamic text formatting."""
-        # Load Products (Buyable or Both) sorted by name
-        query = "SELECT product_id, name, unit_price, category, size FROM products WHERE product_type IN ('buyable', 'both') ORDER BY name ASC"
-        products = self.db.fetch_data(query)
-
-        self.product_map = {}
-        display_list = []
-
-        for p in products:
-            p_id, name, price, cat, size = p
-            display_text = f"{name}"
-
-            # Only add Category/Size if they are not empty
-            if cat and str(cat).strip():
-                display_text += f" ({cat})"
-            if size and str(size).strip():
-                display_text += f" ({size})"
-
-            # Map the display text to the actual product ID and price
-            self.product_map[display_text] = (p_id, price)
-            display_list.append(display_text)    
-
-        self.combo_product['values'] = display_list
-        self.combo_product.bind("<<ComboboxSelected>>", self.on_product_select)
-
-    def show_calendar(self):
-        """Open a popup window to select a date. Selection is automatic on click."""
-        from tkcalendar import Calendar
-        
-        # Create a popup window
-        top = tk.Toplevel(self.root)
-        top.title("Select Date")
-        top.geometry("300x280")
-        
-        # Make the popup window modal (keeps focus until closed)
-        top.grab_set()
-
-        # Calendar widget setup
-        cal = Calendar(top, selectmode='day', 
-                       date_pattern='yyyy-mm-dd',
-                       year=datetime.now().year, 
-                       month=datetime.now().month)
-        cal.pack(fill="both", expand=True, padx=10, pady=10)
-
-        def on_date_select(event=None):
-            """Update the entry and close the popup immediately after selection."""
-            self.ent_date.delete(0, tk.END)
-            self.ent_date.insert(0, cal.get_date())
-            top.destroy()
-
-        # Bind the selection event to our function
-        # This triggers when a user clicks on any date
-        cal.bind("<<CalendarSelected>>", on_date_select)
-
-    def on_product_select(self, event):
-        """Auto-fill cost price field based on selected product."""
-        p_name = self.combo_product.get()
-        if p_name in self.product_map:
-            default_cost = self.product_map[p_name][1]
-            self.ent_cost.delete(0, tk.END)
-            self.ent_cost.insert(0, str(default_cost))  
-            
-            #  Move the cursor to the Quantity (Qty) field automatically
-            self.ent_qty.focus_set()  
-
-    def add_to_basket(self):
-        """Add current entry fields to the temporary basket and treeview."""
-        p_name = self.combo_product.get()
-        qty_str = self.ent_qty.get()
-        cost_str = self.ent_cost.get()
-
-        if not p_name or not qty_str or not cost_str:
-            messagebox.showwarning("Warning", "Please fill all fields.")
-            return
-
-        try:
-            qty = int(qty_str)
-            cost = float(cost_str)
-            subtotal = qty * cost
-            # Extract product ID from the map
-            p_id = self.product_map[p_name][0]
-
-            # Add to memory list
-            self.basket.append({'id': p_id, 'name': p_name, 'qty': qty, 'cost': cost, 'subtotal': subtotal})
-            # Add to visual table
-            self.tree.insert("", "end", values=(p_id, p_name, qty, f"{cost:.2f}", f"{subtotal:.2f}"))
-            
-            self.update_total()
-            
-            # Reset input fields for the next entry
-            self.ent_qty.delete(0, tk.END)
-            self.ent_cost.delete(0, tk.END)
-        except ValueError:
-            messagebox.showerror("Error", "Quantity and Cost must be numeric.")
-
-    def remove_from_basket(self):
-        """Remove highlighted rows from both the basket list and UI table."""
-        selected = self.tree.selection()
-        if selected:
-            for item in selected:
-                idx = self.tree.index(item)
-                del self.basket[idx]
-                self.tree.delete(item)
-            self.update_total()
-
-    def select_all_price(self, event):
-        """Select the entire content of the price entry field for easy editing."""
-        # We use after_idle to ensure the selection happens after the focus event is fully processed
-        self.root.after_idle(lambda: self.ent_cost.selection_range(0, tk.END))
-        self.root.after_idle(lambda: self.ent_cost.icursor(tk.END))
-
-    def update_total(self):
-        """Calculate and display the sum of all items in the current basket."""
-        total = sum(item['subtotal'] for item in self.basket)
-        self.lbl_total.config(text=f"Total Cost: {total:.2f}")
-
-    def save_purchase_invoice(self):
+    def save_invoice(self):
         """Finalize the purchase by saving the header and items to the database."""
         if not self.basket:
             messagebox.showwarning("Empty", "No items to save.")
             return
-        
-        supplier = self.ent_supplier.get() or "Unknown Supplier"
-        date_str = self.ent_date.get()
+
+        date_str = self.get_validated_date()
+        if not date_str:
+            return
+
+        supplier = self.ent_supplier.get() or UNKNOWN_SUPPLIER
         total_amount = sum(item['subtotal'] for item in self.basket)
 
         try:
-            # Validate date format
-            datetime.strptime(date_str, "%Y-%m-%d")
-            
-            # Step 1: Insert into purchase_invoices table (Header)
-            query_h = "INSERT INTO purchase_invoices (supplier_name, purchase_date, total_amount) VALUES (?, ?, ?)"
-            cursor = self.db.execute_query(query_h, (supplier, date_str, total_amount))
-            p_invoice_id = cursor.lastrowid
-
-            # Step 2: Insert each item into purchase_items table (Details)
-            for item in self.basket:
-                query_i = """INSERT INTO purchase_items (purchase_invoice_id, product_id, quantity, unit_cost_price, subtotal) 
-                             VALUES (?, ?, ?, ?, ?)"""
-                self.db.execute_query(query_i, (p_invoice_id, item['id'], item['qty'], item['cost'], item['subtotal']))
-
+            p_invoice_id = self.db.save_purchase_invoice(supplier, date_str, total_amount, self.basket)
             messagebox.showinfo("Success", f"Purchase Invoice #{p_invoice_id} saved.")
-            self.clear_all()
-        except ValueError:
-            messagebox.showerror("Date Error", "Use YYYY-MM-DD format.")
+            self.clear_invoice()
+            self.ent_supplier.delete(0, tk.END)
+        except Exception as e:
+            messagebox.showerror("Database Error", f"Failed to save: {e}")
 
-    def clear_all(self):
-        """Reset the entire screen for a new invoice entry."""
-        self.basket = []
-        for i in self.tree.get_children(): self.tree.delete(i)
-        self.ent_supplier.delete(0, tk.END)
-        self.update_total()
 
 if __name__ == "__main__":
     root = tk.Tk()

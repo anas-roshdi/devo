@@ -1,12 +1,24 @@
+"""
+Product Management Window.
+============================
+Full CRUD operations for managing product inventory.
+All database operations go through DatabaseManager methods.
+"""
+
 import tkinter as tk
 from tkinter import ttk, messagebox
 from src.database.database_manager import DatabaseManager
+from config import Colors, Fonts, WindowConfig, PRODUCT_TYPES, DEFAULT_PRODUCT_TYPE_INDEX
+
 
 class ManageProductsWindow:
     def __init__(self, root):
         self.root = root
         self.root.title("Devo - Unified Product Management")
-        self.root.geometry("1000x750")
+        
+        geo, min_w, min_h = WindowConfig.PRODUCTS
+        self.root.geometry(geo)
+        self.root.minsize(min_w, min_h)
         
         # Initialize database connection instance
         self.db = DatabaseManager()
@@ -19,15 +31,17 @@ class ManageProductsWindow:
         """Build and arrange all UI components for product management."""
         
         # --- Main Title Section ---
-        tk.Label(self.root, text="Product Inventory System", font=("Arial", 20, "bold"), fg="#2c3e50").pack(pady=15)
+        tk.Label(self.root, text="Product Inventory System", 
+                 font=Fonts.HEADER_MEDIUM, fg=Colors.PRIMARY_DARK).pack(pady=15)
 
         # --- Top Section: Input/Edit Form Frame ---
-        form_frame = tk.LabelFrame(self.root, text=" Product Information (Add / Edit) ", padx=15, pady=15, font=("Arial", 10, "bold"))
+        form_frame = tk.LabelFrame(self.root, text=" Product Information (Add / Edit) ", 
+                                   padx=15, pady=15, font=Fonts.LABEL_FRAME)
         form_frame.pack(padx=20, pady=10, fill="x")
 
         # Row 0: ID (ReadOnly) and Name Entry
         tk.Label(form_frame, text="Product ID:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
-        self.ent_id = tk.Entry(form_frame, state="readonly", fg="blue", width=10)
+        self.ent_id = tk.Entry(form_frame, state="readonly", fg=Colors.TEXT_BLUE, width=10)
         self.ent_id.grid(row=0, column=1, sticky="w", padx=5, pady=5)
 
         tk.Label(form_frame, text="Name:").grid(row=0, column=2, sticky="w", padx=5, pady=5)
@@ -45,9 +59,9 @@ class ManageProductsWindow:
 
         # Row 2: Product Type (Combo) and Size Entry
         tk.Label(form_frame, text="Type:").grid(row=2, column=0, sticky="w", padx=5, pady=5)
-        self.combo_type = ttk.Combobox(form_frame, values=["sellable", "buyable", "both"], state="readonly", width=18)
+        self.combo_type = ttk.Combobox(form_frame, values=PRODUCT_TYPES, state="readonly", width=18)
         self.combo_type.grid(row=2, column=1, padx=5, pady=5)
-        self.combo_type.current(2) # Defaults to 'both' index
+        self.combo_type.current(DEFAULT_PRODUCT_TYPE_INDEX)
 
         tk.Label(form_frame, text="Size:").grid(row=2, column=2, sticky="w", padx=5, pady=5)
         self.ent_size = tk.Entry(form_frame, width=20)
@@ -58,23 +72,23 @@ class ManageProductsWindow:
         btn_frame.pack(pady=10)
 
         # Button to add a new record
-        tk.Button(btn_frame, text="➕ Add New Product", bg="#27ae60", fg="white", 
-                  width=18, font=("Arial", 10, "bold"), command=self.add_product).pack(side="left", padx=10)
+        tk.Button(btn_frame, text="➕ Add New Product", bg=Colors.GREEN_DARK, fg=Colors.TEXT_WHITE,
+                  width=18, font=Fonts.BTN_MEDIUM, command=self.add_product).pack(side="left", padx=10)
         
         # Button to update existing record details
-        tk.Button(btn_frame, text="💾 Update Selected", bg="#2980b9", fg="white", 
-                  width=18, font=("Arial", 10, "bold"), command=self.update_product).pack(side="left", padx=10)
+        tk.Button(btn_frame, text="💾 Update Selected", bg=Colors.BLUE_DARK, fg=Colors.TEXT_WHITE,
+                  width=18, font=Fonts.BTN_MEDIUM, command=self.update_product).pack(side="left", padx=10)
         
         # Button to delete a record permanently
-        tk.Button(btn_frame, text="🗑️ Delete Product", bg="#c0392b", fg="white", 
-                  width=18, font=("Arial", 10, "bold"), command=self.delete_product).pack(side="left", padx=10)
+        tk.Button(btn_frame, text="🗑️ Delete Product", bg=Colors.RED_DARK, fg=Colors.TEXT_WHITE,
+                  width=18, font=Fonts.BTN_MEDIUM, command=self.delete_product).pack(side="left", padx=10)
         
         # Button to clear all entry fields
-        tk.Button(btn_frame, text="🧹 Clear Fields", bg="#7f8c8d", fg="white", 
-                  width=18, font=("Arial", 10, "bold"), command=self.clear_fields).pack(side="left", padx=10)
+        tk.Button(btn_frame, text="🧹 Clear Fields", bg=Colors.GRAY, fg=Colors.TEXT_WHITE,
+                  width=18, font=Fonts.BTN_MEDIUM, command=self.clear_fields).pack(side="left", padx=10)
 
         # --- Bottom Section: Table View ---
-        tk.Label(self.root, text="Current Inventory List", font=("Arial", 12, "italic")).pack(pady=(10, 0))
+        tk.Label(self.root, text="Current Inventory List", font=Fonts.BODY_ITALIC).pack(pady=(10, 0))
 
         table_frame = tk.Frame(self.root)
         table_frame.pack(padx=20, pady=10, fill="both", expand=True)
@@ -135,9 +149,10 @@ class ManageProductsWindow:
             return
 
         try:
-            query = "UPDATE products SET name=?, category=?, unit_price=?, product_type=?, size=? WHERE product_id=?"
-            params = (self.ent_name.get(), self.ent_cat.get(), float(self.ent_price.get()), self.combo_type.get(), self.ent_size.get(), p_id)
-            self.db.execute_query(query, params)
+            self.db.update_product(
+                p_id, self.ent_name.get(), self.ent_cat.get(), 
+                float(self.ent_price.get()), self.combo_type.get(), self.ent_size.get()
+            )
             messagebox.showinfo("Success", "Product updated successfully!")
             self.load_data()
         except Exception as e:
@@ -149,7 +164,7 @@ class ManageProductsWindow:
         if not p_id: return
         
         if messagebox.askyesno("Confirm", "Delete this product permanently?"):
-            self.db.execute_query("DELETE FROM products WHERE product_id=?", (p_id,))
+            self.db.delete_product(p_id)
             self.load_data()
             self.clear_fields()
 
@@ -183,7 +198,7 @@ class ManageProductsWindow:
         self.ent_cat.delete(0, tk.END)
         self.ent_price.delete(0, tk.END)
         self.ent_size.delete(0, tk.END)
-        self.combo_type.current(2)
+        self.combo_type.current(DEFAULT_PRODUCT_TYPE_INDEX)
 
 if __name__ == "__main__":
     app_root = tk.Tk()
