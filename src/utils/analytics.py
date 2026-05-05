@@ -159,3 +159,122 @@ class AnalyticsManager:
         # Adjust layout to prevent label cropping and display the chart
         plt.tight_layout()
         plt.show()
+
+    @staticmethod
+    def display_customer_performance(data):
+        """
+        Generates a Bubble Chart for customer performance / VIP analysis.
+        
+        Data format: list of (customer_name, total_invoices, total_units, total_amount)
+        - X-axis: Total Amount Spent (how much they pay)
+        - Y-axis: Number of Invoices (how often they buy)
+        - Bubble size: Total Units purchased (volume)
+        - Color: Gradient based on total amount (darker = higher value)
+        """
+        import matplotlib.pyplot as plt
+        import arabic_reshaper
+        from bidi.algorithm import get_display
+        import numpy as np
+        
+        plt.rcParams['font.family'] = 'Arial'
+        
+        if not data:
+            return
+        
+        names = []
+        invoices = []   # Y-axis
+        amounts = []    # X-axis
+        units = []      # Bubble size
+        
+        for row in data:
+            # Fix Arabic text rendering
+            reshaped = arabic_reshaper.reshape(str(row[0]))
+            bidi_name = get_display(reshaped)
+            names.append(bidi_name)
+            invoices.append(row[1])
+            units.append(row[2])
+            amounts.append(row[3])
+        
+        # --- Create the Bubble Chart ---
+        fig, ax = plt.subplots(figsize=(12, 8))
+        
+        # Normalize bubble sizes (min 200, max 2500 for visibility)
+        units_arr = np.array(units, dtype=float)
+        if units_arr.max() > units_arr.min():
+            normalized = 200 + (units_arr - units_arr.min()) / (units_arr.max() - units_arr.min()) * 2300
+        else:
+            normalized = np.full_like(units_arr, 800)
+        
+        # Color gradient based on total amount (gold → red for VIP)
+        amounts_arr = np.array(amounts, dtype=float)
+        colors = plt.cm.YlOrRd(np.linspace(0.3, 0.95, len(amounts_arr)))
+        
+        # Sort by amount so highest is plotted last (on top)
+        sort_idx = np.argsort(amounts_arr)
+        
+        # Plot bubbles
+        scatter = ax.scatter(
+            amounts_arr[sort_idx], 
+            np.array(invoices)[sort_idx],
+            s=normalized[sort_idx],
+            c=colors[np.arange(len(sort_idx))],
+            alpha=0.75,
+            edgecolors='#2c3e50',
+            linewidths=1.5,
+            zorder=5
+        )
+        
+        # Add customer name labels on each bubble
+        for i in sort_idx:
+            ax.annotate(
+                names[i],
+                (amounts[i], invoices[i]),
+                ha='center', va='center',
+                fontsize=8, fontweight='bold', color='#2c3e50',
+                zorder=6
+            )
+        
+        # Mark the VIP customer (highest amount) with a special highlight
+        vip_idx = int(np.argmax(amounts_arr))
+        ax.annotate(
+            '⭐ VIP',
+            (amounts[vip_idx], invoices[vip_idx]),
+            xytext=(15, 15), textcoords='offset points',
+            fontsize=11, fontweight='bold', color='#c0392b',
+            arrowprops=dict(arrowstyle='->', color='#c0392b', lw=2),
+            zorder=7
+        )
+        
+        # --- Styling ---
+        ax.set_title('Customer Performance & VIP Analysis', 
+                     fontsize=16, fontweight='bold', pad=20, color='#2c3e50')
+        ax.set_xlabel('Total Amount Spent', fontsize=12, fontweight='bold', color='#34495e')
+        ax.set_ylabel('Number of Invoices (Orders)', fontsize=12, fontweight='bold', color='#34495e')
+        
+        # Grid for readability
+        ax.grid(True, alpha=0.3, linestyle='--')
+        ax.set_axisbelow(True)
+        
+        # Background styling
+        fig.patch.set_facecolor('#fafafa')
+        ax.set_facecolor('#fafafa')
+        
+        # Add size legend (explaining bubble size = units)
+        legend_sizes = [int(units_arr.min()), int(np.median(units_arr)), int(units_arr.max())]
+        legend_sizes = sorted(set(legend_sizes))  # Remove duplicates
+        
+        if units_arr.max() > units_arr.min():
+            legend_normalized = [200 + (s - units_arr.min()) / (units_arr.max() - units_arr.min()) * 2300 
+                                for s in legend_sizes]
+        else:
+            legend_normalized = [800 for _ in legend_sizes]
+        
+        legend_bubbles = [ax.scatter([], [], s=sz, c='#f39c12', alpha=0.6, 
+                                     edgecolors='#2c3e50', linewidths=1)
+                         for sz in legend_normalized]
+        ax.legend(legend_bubbles, [f'{s} Units' for s in legend_sizes],
+                 title='Total Units Purchased', title_fontsize=10,
+                 loc='upper left', framealpha=0.9, fontsize=9)
+        
+        plt.tight_layout()
+        plt.show()

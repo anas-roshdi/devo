@@ -351,6 +351,30 @@ class DatabaseManager:
         
         return self.fetch_data(query, tuple(params))
 
+    def get_customer_performance(self, start_date, end_date, limit_num=10):
+        """
+        Fetch customer performance data for VIP/loyalty analysis.
+        
+        Returns list of tuples:
+            (customer_name, total_invoices, total_units, total_amount)
+        Sorted by total_amount descending, excluding 'General Customer'.
+        """
+        return self.fetch_data(
+            """SELECT c.name,
+                      COUNT(DISTINCT s.invoice_id) as total_invoices,
+                      COALESCE(SUM(si.quantity), 0) as total_units,
+                      COALESCE(SUM(si.subtotal), 0) as total_amount
+               FROM customers c
+               JOIN sale_invoices s ON c.customer_id = s.customer_id
+               JOIN sale_items si ON s.invoice_id = si.invoice_id
+               WHERE s.sale_date BETWEEN ? AND ?
+                 AND c.name != 'General Customer'
+               GROUP BY c.customer_id, c.name
+               ORDER BY total_amount DESC
+               LIMIT ?""",
+            (start_date, end_date, limit_num)
+        )
+
 
 # Testing the connection
 if __name__ == "__main__":

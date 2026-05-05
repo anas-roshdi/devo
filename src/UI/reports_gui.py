@@ -95,11 +95,14 @@ class ReportsWindow:
                   command=self.export_to_excel).grid(row=0, column=9, padx=5)
         
         # Row 2: Dynamic Analysis Options and Forecast Controls
+        # Limit frame for Top Products and Customer Performance
+        self.frame_limit = tk.Frame(row2)
+        tk.Label(self.frame_limit, text="Limit:").pack(side=tk.LEFT)
+        self.spin_top_limit = tk.Spinbox(self.frame_limit, from_=1, to=100, width=5, textvariable=self.var_top_limit)
+        self.spin_top_limit.pack(side=tk.LEFT, padx=5)
+        
         # Grouping frame specifically for 'Top Products' analysis mode
         self.frame_grouping = tk.Frame(row2)
-        self.spin_top_limit = tk.Spinbox(self.frame_grouping, from_=1, to=100, width=5, textvariable=self.var_top_limit)
-        tk.Label(self.frame_grouping, text="Limit:").pack(side=tk.LEFT)
-        self.spin_top_limit.pack(side=tk.LEFT, padx=5)
         tk.Checkbutton(self.frame_grouping, text="Name", variable=self.var_grp_name).pack(side=tk.LEFT)
         tk.Checkbutton(self.frame_grouping, text="Category", variable=self.var_grp_cat).pack(side=tk.LEFT)
         tk.Checkbutton(self.frame_grouping, text="Size", variable=self.var_grp_size).pack(side=tk.LEFT)
@@ -160,6 +163,17 @@ class ReportsWindow:
                                        bg=Colors.DARK_GRAY, fg=Colors.TEXT_WHITE, 
                                        font=Fonts.CARD, width=22, height=3)
 
+        # Customer Performance cards (hidden by default)
+        self.card_vip_name = tk.Label(self.summary_frame, text="\u2b50 VIP Customer\n---",
+                                      bg="#e67e22", fg=Colors.TEXT_WHITE,
+                                      font=Fonts.CARD, width=22, height=3)
+        self.card_total_customers = tk.Label(self.summary_frame, text="Active Customers\n0",
+                                             bg=Colors.PURPLE, fg=Colors.TEXT_WHITE,
+                                             font=Fonts.CARD, width=22, height=3)
+        self.card_total_revenue = tk.Label(self.summary_frame, text="Total Revenue\n0.00",
+                                           bg=Colors.BLUE_DARK, fg=Colors.TEXT_WHITE,
+                                           font=Fonts.CARD, width=22, height=3)
+
         # --- Main Data Table (Treeview) ---
         table_frame = tk.Frame(self.root)
         table_frame.pack(fill="both", expand=True, padx=20, pady=10)
@@ -213,30 +227,46 @@ class ReportsWindow:
             self.card_purchases.pack_forget() 
             self.card_profit.pack_forget()
 
+    def _hide_all_mode_elements(self):
+        """Hide all mode-specific UI elements (cards, filters) for clean switching."""
+        # Hide all summary cards
+        self.card_sales.pack_forget()
+        self.card_purchases.pack_forget()
+        self.card_profit.pack_forget()
+        self.card_top_units.pack_forget()
+        self.card_vip_name.pack_forget()
+        self.card_total_customers.pack_forget()
+        self.card_total_revenue.pack_forget()
+        
+        # Hide mode-specific filter elements
+        self.frame_limit.grid_remove()
+        self.frame_grouping.grid_remove()
+        self.lbl_group_by.grid_remove()
+        self.combo_group.grid_remove()
+        self.forecast_sub_frame.grid_remove()
+        self.lbl_periods.grid_remove()
+        self.spin_periods.grid_remove()
+
     def on_chart_change(self, event=None):
-        """Dynamically toggle between Financial and Product Analysis UI layouts."""
+        """Dynamically toggle between analysis mode UI layouts."""
         mode = self.combo_chart.get()
+        self._hide_all_mode_elements()
+        
         if mode == "Top Products":
-            # Hide Financial/Forecast grid elements
-            self.lbl_group_by.grid_remove()
-            self.combo_group.grid_remove()
-            self.forecast_sub_frame.grid_remove()
-            self.lbl_periods.grid_remove()
-            self.spin_periods.grid_remove()
-            
-            # Hide Financial summary cards (Pack)
-            self.card_sales.pack_forget()
-            self.card_purchases.pack_forget()
-            self.card_profit.pack_forget()
-
             # Show Top Product specific grouping and cards
-            self.frame_grouping.grid(row=0, column=2, columnspan=2, sticky="w", padx=5)
+            self.frame_limit.grid(row=0, column=2, sticky="w", padx=5)
+            self.frame_grouping.grid(row=0, column=3, columnspan=2, sticky="w", padx=5)
             self.card_top_units.pack(side="left", padx=5)
-        else:
+            
+        elif mode == "Customer Performance":
+            # Show Customer Performance cards
+            self.frame_limit.grid(row=0, column=2, sticky="w", padx=5)
+            self.card_vip_name.pack(side="left", padx=5)
+            self.card_total_customers.pack(side="left", padx=5)
+            self.card_total_revenue.pack(side="left", padx=5)
+            
+        else:  # Profit Margin (default)
             # Restore Financial Analysis layout
-            self.frame_grouping.grid_remove()
-            self.card_top_units.pack_forget()
-
             self.lbl_group_by.grid()
             self.combo_group.grid()
             self.forecast_sub_frame.grid()
@@ -251,8 +281,11 @@ class ReportsWindow:
 
     def generate_btn_action(self):
         """Determine which report function to execute based on current selection."""
-        if self.combo_chart.get() == "Top Products":
+        mode = self.combo_chart.get()
+        if mode == "Top Products":
             self.fetch_and_display_top_products()
+        elif mode == "Customer Performance":
+            self.fetch_and_display_customer_performance()
         else:
             self.generate_report()
 
@@ -273,6 +306,10 @@ class ReportsWindow:
             if data:
                 # num_fields defines the descriptive columns before the 'Quantity' column
                 AnalyticsManager.display_top_products(data, len(data[0]) - 1)
+        elif chart_type == "Customer Performance":
+            data = self.fetch_and_display_customer_performance()
+            if data:
+                AnalyticsManager.display_customer_performance(data)
         elif chart_type == "Profit Margin":
             # Refresh data if filters have changed
             if not self.current_report_data or current_start != self.last_search_start:
@@ -314,6 +351,42 @@ class ReportsWindow:
         self.tree.delete(*self.tree.get_children())
         for row in top_products: self.tree.insert("", tk.END, values=row)
         return top_products
+
+    def fetch_and_display_customer_performance(self):
+        """Retrieve customer performance data and display in table with summary cards."""
+        # Fetch data from database
+        perf_data = self.db.get_customer_performance(
+            self.ent_from.get(), self.ent_to.get(), 
+            self.var_top_limit.get()
+        )
+        
+        if not perf_data:
+            messagebox.showinfo("No Data", "No customer sales data found in this period.")
+            return None
+        
+        # Update summary cards
+        vip_name = perf_data[0][0]  # First row = highest amount
+        total_customers = len(perf_data)
+        total_revenue = sum(row[3] for row in perf_data)
+        
+        self.card_vip_name.config(text=f"\u2b50 VIP Customer\n{vip_name}")
+        self.card_total_customers.config(text=f"Active Customers\n{total_customers}")
+        self.card_total_revenue.config(text=f"Total Revenue\n{total_revenue:,.2f}")
+        
+        # Rebuild Treeview columns for customer performance
+        col_names = ("Customer", "Invoices", "Units Bought", "Total Amount")
+        self.tree["columns"] = col_names
+        for col in col_names:
+            self.tree.heading(col, text=col)
+            self.tree.column(col, anchor="center", width=150)
+        
+        self.tree.delete(*self.tree.get_children())
+        for row in perf_data:
+            # Format the amount with 2 decimal places
+            formatted = (row[0], row[1], row[2], f"{row[3]:,.2f}")
+            self.tree.insert("", tk.END, values=formatted)
+        
+        return perf_data
 
     def load_filters(self):
         """Fetch all customers from DB and populate the shop filter dropdown."""

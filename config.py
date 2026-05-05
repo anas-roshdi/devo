@@ -98,7 +98,7 @@ PRODUCT_TYPES = ["sellable", "buyable", "both"]
 DEFAULT_PRODUCT_TYPE_INDEX = 2  # 'both'
 
 # Analysis modes
-ANALYSIS_MODES = ("Profit Margin", "Top Products")
+ANALYSIS_MODES = ("Profit Margin", "Top Products", "Customer Performance")
 GROUP_BY_OPTIONS = ("Weekly", "Monthly")
 DEFAULT_TOP_LIMIT = 5
 DEFAULT_FORECAST_PERIODS = 3
