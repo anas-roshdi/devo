@@ -7,6 +7,9 @@ __pycache__/
 # Local Database (Safe to ignore if you want a fresh DB for others)
 devo_business.sqlite
 
+# AI Learned Data (Private store info)
+src/AI/learned_mappings.json
+
 # OS generated files
 .DS_Store
 Thumbs.db

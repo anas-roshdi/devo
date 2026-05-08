@@ -14,6 +14,7 @@ from src.UI.customer_gui import CustomerWindow
 from src.UI.sales_invoice_gui import SalesInvoiceWindow
 from src.UI.purchase_invoice_gui import PurchaseInvoiceWindow
 from src.UI.reports_gui import ReportsWindow
+from src.UI.ai_sales_gui import AISalesWindow
 from config import Colors, Fonts, WindowConfig
 
 class DevoDashboard:
@@ -62,10 +63,14 @@ class DevoDashboard:
         tk.Button(menu_frame, text="📥\nPURCHASE INVOICE", bg=Colors.RED, **btn_style,
                   command=self.open_purchases).grid(row=1, column=1, padx=15, pady=15)
 
-        # Button 5: Comprehensive Financial Reports (Spans full width)
-        tk.Button(menu_frame, text="📊\nFINANCIAL REPORTS & EXCEL", bg=Colors.YELLOW, 
-                  fg=Colors.TEXT_BLACK, font=Fonts.BODY_BOLD, width=48, height=3, bd=0,
-                  command=self.open_reports).grid(row=2, column=0, columnspan=2, pady=15)
+        # Button 5: AI Sales Entry (NEW)
+        tk.Button(menu_frame, text="🤖\nAI SALES ENTRY", bg=Colors.DARK_GRAY, **btn_style,
+                  command=self.open_ai_sales).grid(row=2, column=0, padx=15, pady=15)
+
+        # Button 6: Comprehensive Financial Reports
+        tk.Button(menu_frame, text="📊\nFINANCIAL REPORTS", bg=Colors.YELLOW, 
+                  **{**btn_style, "fg": Colors.TEXT_BLACK},
+                  command=self.open_reports).grid(row=2, column=1, padx=15, pady=15)
 
     # --- Navigation Logic: Opening Sub-Windows ---
 
@@ -93,6 +98,11 @@ class DevoDashboard:
         """Open the financial analytics and reporting window."""
         new_win = tk.Toplevel(self.root)
         ReportsWindow(new_win)
+
+    def open_ai_sales(self):
+        """Open the AI-powered WhatsApp sales entry window."""
+        new_win = tk.Toplevel(self.root)
+        AISalesWindow(new_win)
 
 if __name__ == "__main__":
     # Standard application entry point
