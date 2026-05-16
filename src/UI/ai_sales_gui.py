@@ -11,6 +11,7 @@ from datetime import datetime
 from src.AI.invoice_extractor import InvoiceExtractor
 from src.database.database_manager import DatabaseManager
 from config import Colors, Fonts, WindowConfig, DEFAULT_CUSTOMER
+from src.utils.translator import t, get_pack_side, is_rtl
 
 
 class AISalesWindow:
@@ -18,7 +19,7 @@ class AISalesWindow:
 
     def __init__(self, root):
         self.root = root
-        self.root.title("Devo - AI Sales Entry (WhatsApp Parser)")
+        self.root.title(t('ai_win_title'))
 
         geo, min_w, min_h = WindowConfig.AI_SALES
         self.root.geometry(geo)
@@ -70,7 +71,7 @@ class AISalesWindow:
         """Build the three-section interface."""
 
         # ── SECTION 1: Input Area ──
-        input_frame = tk.LabelFrame(self.root, text="📋 Paste WhatsApp Messages",
+        input_frame = tk.LabelFrame(self.root, text=t('lbl_paste_messages'),
                                     padx=10, pady=10, font=Fonts.LABEL_FRAME)
         input_frame.pack(fill="x", padx=15, pady=(10, 5))
 
@@ -78,17 +79,17 @@ class AISalesWindow:
         top_row = tk.Frame(input_frame)
         top_row.pack(fill="x", pady=(0, 5))
 
-        tk.Label(top_row, text="Year:").pack(side="left")
+        tk.Label(top_row, text=t('lbl_year')).pack(side=get_pack_side(tk.LEFT))
         self.spin_year = tk.Spinbox(top_row, from_=2024, to=2030, width=6,
                                     value=datetime.now().year)
-        self.spin_year.pack(side="left", padx=5)
+        self.spin_year.pack(side=get_pack_side(tk.LEFT), padx=5)
 
-        tk.Button(top_row, text="🤖 Parse with AI", bg=Colors.PURPLE,
+        tk.Button(top_row, text=t('btn_parse_ai'), bg=Colors.PURPLE,
                   fg=Colors.TEXT_WHITE, font=Fonts.BTN_MEDIUM,
-                  command=self.parse_messages).pack(side="right")
+                  command=self.parse_messages).pack(side=get_pack_side(tk.RIGHT))
 
-        tk.Button(top_row, text="🧹 Clear", bg=Colors.GRAY, fg=Colors.TEXT_WHITE,
-                  command=self.clear_all).pack(side="right", padx=5)
+        tk.Button(top_row, text=t('btn_clear'), bg=Colors.GRAY, fg=Colors.TEXT_WHITE,
+                  command=self.clear_all).pack(side=get_pack_side(tk.RIGHT), padx=5)
 
         # Text area
         self.txt_input = scrolledtext.ScrolledText(input_frame, height=6,
@@ -120,9 +121,9 @@ class AISalesWindow:
         results_frame.pack(fill="both", expand=True, padx=15, pady=5)
 
         # Left: Invoice list
-        left_frame = tk.LabelFrame(results_frame, text="📑 Invoices Found",
+        left_frame = tk.LabelFrame(results_frame, text=t('lbl_invoices_found'),
                                    font=Fonts.LABEL_FRAME, width=250)
-        left_frame.pack(side="left", fill="y", padx=(0, 5))
+        left_frame.pack(side=get_pack_side(tk.LEFT), fill="y", padx=(0, 5))
         left_frame.pack_propagate(False)
 
         self.invoice_listbox = tk.Listbox(left_frame, font=Fonts.BODY,
@@ -133,35 +134,35 @@ class AISalesWindow:
         self.invoice_listbox.bind("<<ListboxSelect>>", self.on_invoice_select)
 
         # Right: Invoice details
-        right_frame = tk.LabelFrame(results_frame, text="📝 Invoice Details",
+        right_frame = tk.LabelFrame(results_frame, text=t('lbl_invoice_details'),
                                     font=Fonts.LABEL_FRAME)
-        right_frame.pack(side="left", fill="both", expand=True)
+        right_frame.pack(side=get_pack_side(tk.LEFT), fill="both", expand=True)
 
         # Customer + Date row
         detail_header = tk.Frame(right_frame)
         detail_header.pack(fill="x", padx=10, pady=5)
 
-        tk.Label(detail_header, text="Customer:").pack(side="left")
+        tk.Label(detail_header, text=t('lbl_customer')).pack(side=get_pack_side(tk.LEFT))
         self.combo_customer = ttk.Combobox(detail_header, values=self.customer_names,
                                            state="readonly", width=20)
-        self.combo_customer.pack(side="left", padx=5)
+        self.combo_customer.pack(side=get_pack_side(tk.LEFT), padx=5)
         self.combo_customer.bind("<<ComboboxSelected>>", self.on_customer_change)
 
-        tk.Label(detail_header, text="Date:").pack(side="left", padx=(15, 0))
+        tk.Label(detail_header, text=t('lbl_date')).pack(side=get_pack_side(tk.LEFT), padx=(15, 0))
         self.ent_date = tk.Entry(detail_header, width=12)
-        self.ent_date.pack(side="left", padx=5)
+        self.ent_date.pack(side=get_pack_side(tk.LEFT), padx=5)
 
         # Original text display
         self.lbl_original = tk.Label(right_frame, text="", fg=Colors.GRAY,
                                      font=("Arial", 9, "italic"), wraplength=500,
-                                     justify="right", anchor="e")
+                                     justify=get_pack_side(tk.RIGHT), anchor="e")
         self.lbl_original.pack(fill="x", padx=10)
 
         # Items table
         table_frame = tk.Frame(right_frame)
         table_frame.pack(fill="both", expand=True, padx=10, pady=5)
 
-        columns = ("Raw Text", "Product", "Qty", "Price", "Subtotal", "Confidence")
+        columns = (t('col_raw_text'), t('col_product'), t('col_qty'), t('col_price'), t('col_subtotal'), t('col_confidence'))
         self.tree = ttk.Treeview(table_frame, columns=columns, show="headings",
                                  height=6, selectmode="browse")
         col_widths = {"Raw Text": 140, "Product": 160, "Qty": 50,
@@ -170,67 +171,67 @@ class AISalesWindow:
             self.tree.heading(col, text=col)
             self.tree.column(col, width=col_widths.get(col, 100), anchor="center")
 
-        self.tree.pack(side="left", fill="both", expand=True)
+        self.tree.pack(side=get_pack_side(tk.LEFT), fill="both", expand=True)
         scrollbar = ttk.Scrollbar(table_frame, orient="vertical",
                                   command=self.tree.yview)
         self.tree.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side="right", fill="y")
+        scrollbar.pack(side=get_pack_side(tk.RIGHT), fill="y")
 
         self.tree.bind("<<TreeviewSelect>>", self.on_item_select)
 
         # Edit row (shown when item is selected)
-        edit_frame = tk.LabelFrame(right_frame, text="Edit Selected Item",
+        edit_frame = tk.LabelFrame(right_frame, text=t('lbl_edit_item'),
                                    padx=5, pady=5)
         edit_frame.pack(fill="x", padx=10, pady=(0, 5))
 
-        tk.Label(edit_frame, text="Product:").grid(row=0, column=0)
+        tk.Label(edit_frame, text=t('lbl_product')).grid(row=0, column=0)
         self.combo_edit_product = ttk.Combobox(edit_frame, values=self.product_list,
                                                 width=30)
         self.combo_edit_product.grid(row=0, column=1, padx=5)
         self.combo_edit_product.bind("<<ComboboxSelected>>", self.on_edit_product_change)
 
-        tk.Label(edit_frame, text="Qty:").grid(row=0, column=2)
+        tk.Label(edit_frame, text=t('lbl_qty')).grid(row=0, column=2)
         self.ent_edit_qty = tk.Entry(edit_frame, width=6)
         self.ent_edit_qty.grid(row=0, column=3, padx=5)
 
-        tk.Label(edit_frame, text="Price:").grid(row=0, column=4)
+        tk.Label(edit_frame, text=t('lbl_price')).grid(row=0, column=4)
         self.ent_edit_price = tk.Entry(edit_frame, width=8)
         self.ent_edit_price.grid(row=0, column=5, padx=5)
 
-        tk.Button(edit_frame, text="✏️ Update", bg=Colors.ORANGE,
+        tk.Button(edit_frame, text=t('btn_update'), bg=Colors.ORANGE,
                   command=self.update_item).grid(row=0, column=6, padx=5)
 
-        tk.Button(edit_frame, text="➕ Add", bg=Colors.BLUE, fg=Colors.TEXT_WHITE,
+        tk.Button(edit_frame, text=t('btn_add'), bg=Colors.BLUE, fg=Colors.TEXT_WHITE,
                   command=self.add_item).grid(row=0, column=7, padx=5)
 
-        tk.Button(edit_frame, text="🗑️ Delete", bg=Colors.RED, fg=Colors.TEXT_WHITE,
+        tk.Button(edit_frame, text=t('btn_delete'), bg=Colors.RED, fg=Colors.TEXT_WHITE,
                   command=self.delete_item).grid(row=0, column=8, padx=5)
 
         # ── SECTION 3: Action Buttons ──
         action_frame = tk.Frame(self.root, padx=15, pady=10)
         action_frame.pack(fill="x")
 
-        tk.Button(action_frame, text="✅ Confirm This Invoice",
+        tk.Button(action_frame, text=t('btn_confirm_current'),
                   bg=Colors.GREEN_DARK, fg=Colors.TEXT_WHITE,
                   font=Fonts.BTN_MEDIUM, command=self.confirm_current).pack(
-                      side="left", padx=5)
+                      side=get_pack_side(tk.LEFT), padx=5)
 
-        tk.Button(action_frame, text="✅ Confirm All Remaining",
+        tk.Button(action_frame, text=t('btn_confirm_all'),
                   bg=Colors.GREEN, fg=Colors.TEXT_WHITE,
                   font=Fonts.BTN_MEDIUM, command=self.confirm_all).pack(
-                      side="left", padx=5)
+                      side=get_pack_side(tk.LEFT), padx=5)
 
-        tk.Button(action_frame, text="❌ Skip This",
+        tk.Button(action_frame, text=t('btn_skip_current'),
                   bg=Colors.RED, fg=Colors.TEXT_WHITE,
-                  command=self.skip_current).pack(side="left", padx=5)
+                  command=self.skip_current).pack(side=get_pack_side(tk.LEFT), padx=5)
 
-        self.lbl_progress = tk.Label(action_frame, text="No invoices parsed yet",
+        self.lbl_progress = tk.Label(action_frame, text=t('lbl_no_invoices'),
                                      font=Fonts.BODY_BOLD, fg=Colors.PRIMARY_DARK)
-        self.lbl_progress.pack(side="right")
+        self.lbl_progress.pack(side=get_pack_side(tk.RIGHT))
         
-        self.lbl_accuracy = tk.Label(action_frame, text="AI Success Rate: N/A",
+        self.lbl_accuracy = tk.Label(action_frame, text=t('lbl_accuracy_na'),
                                      font=Fonts.BODY_BOLD, fg=Colors.PURPLE)
-        self.lbl_accuracy.pack(side="right", padx=15)
+        self.lbl_accuracy.pack(side=get_pack_side(tk.RIGHT), padx=15)
         
         self._update_accuracy_label()
 
@@ -242,7 +243,7 @@ class AISalesWindow:
         """Parse the pasted WhatsApp text using AI engine."""
         raw = self.txt_input.get("1.0", tk.END).strip()
         if not raw:
-            messagebox.showwarning("Empty", "Please paste WhatsApp messages first.")
+            messagebox.showwarning(t('msg_empty_title'), t('msg_paste_first'))
             return
 
         # Set year
@@ -257,8 +258,8 @@ class AISalesWindow:
         self.confirmed_count = 0
 
         if not self.parsed_invoices:
-            messagebox.showinfo("No Results",
-                                "Could not extract any invoices from the text.")
+            messagebox.showinfo(t('msg_no_results'),
+                                t('msg_no_invoices_found'))
             return
 
         # Apply smart pricing based on recognized customer names
@@ -278,9 +279,8 @@ class AISalesWindow:
         self.invoice_listbox.selection_set(0)
         self.on_invoice_select(None)
 
-        messagebox.showinfo("Parsed!",
-                            f"Found {len(self.parsed_invoices)} invoices. "
-                            f"Please review each one before confirming.")
+        messagebox.showinfo(t('msg_parsed_title'),
+                            t('msg_parsed_body').format(count=len(self.parsed_invoices)))
 
     # ==========================================================
     # INVOICE NAVIGATION
@@ -301,7 +301,7 @@ class AISalesWindow:
         self.ent_date.insert(0, inv.date)
 
         # Show original text
-        self.lbl_original.config(text=f"Original: {inv.raw_text[:120]}...")
+        self.lbl_original.config(text=t('lbl_original_text').format(text=inv.raw_text[:120]))
 
         # Populate items table
         self.tree.delete(*self.tree.get_children())
@@ -404,7 +404,7 @@ class AISalesWindow:
             new_qty = float(self.ent_edit_qty.get())
             new_price = float(self.ent_edit_price.get())
         except ValueError:
-            messagebox.showerror("Error", "Quantity and Price must be numbers.")
+            messagebox.showerror(t('msg_error_title'), t('msg_numbers_req'))
             return
 
         # Find product ID and details from display
@@ -440,14 +440,14 @@ class AISalesWindow:
         product_display = self.combo_edit_product.get()
         
         if not product_display or product_display not in self.product_display_map:
-            messagebox.showwarning("Warning", "Please select a valid product to add.")
+            messagebox.showwarning(t('msg_warning_title'), t('msg_select_valid_product'))
             return
             
         try:
             qty = float(self.ent_edit_qty.get())
             price = float(self.ent_edit_price.get())
         except ValueError:
-            messagebox.showerror("Error", "Quantity and Price must be numbers.")
+            messagebox.showerror(t('msg_error_title'), t('msg_numbers_req'))
             return
             
         p_info = self.product_display_map[product_display]
@@ -486,7 +486,7 @@ class AISalesWindow:
         idx = self.tree.index(sel[0])
         inv = self.parsed_invoices[self.current_index]
         
-        if messagebox.askyesno("Confirm", "Are you sure you want to remove this item?"):
+        if messagebox.askyesno(t('msg_confirm_title'), t('msg_remove_item_confirm')):
             deleted_item = inv.items.pop(idx)
             if hasattr(inv, 'deleted_lines'):
                 inv.deleted_lines.append(deleted_item.raw_text)
@@ -505,7 +505,7 @@ class AISalesWindow:
 
         inv = self.parsed_invoices[self.current_index]
         if inv.confirmed:
-            messagebox.showinfo("Info", "This invoice is already confirmed.")
+            messagebox.showinfo(t('msg_info_title'), t('msg_already_confirmed'))
             return
 
         # Get final customer
@@ -519,7 +519,7 @@ class AISalesWindow:
         final_items = []
         for item in inv.items:
             if item.product_id == 0:
-                messagebox.showerror("Error", "Please resolve or delete unmatched items before confirming.")
+                messagebox.showerror(t('msg_error_title'), t('msg_resolve_items'))
                 return
             final_items.append({
                 'id': item.product_id,
@@ -543,9 +543,9 @@ class AISalesWindow:
             self._update_progress()
             self._select_next_unconfirmed()
 
-            messagebox.showinfo("Saved", f"Invoice #{inv_id} confirmed and saved!")
+            messagebox.showinfo(t('msg_success_title'), t('msg_invoice_saved_short').format(inv_id=inv_id))
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to save: {e}")
+            messagebox.showerror(t('msg_error_title'), t('msg_failed_save').format(e=e))
 
     def confirm_all(self):
         """Confirm all remaining unconfirmed invoices."""
@@ -553,11 +553,11 @@ class AISalesWindow:
                      if not inv.confirmed]
 
         if not remaining:
-            messagebox.showinfo("Done", "All invoices are already confirmed.")
+            messagebox.showinfo(t('msg_done_title'), t('msg_all_confirmed'))
             return
 
-        if not messagebox.askyesno("Confirm All",
-                                    f"Confirm {len(remaining)} remaining invoices?"):
+        if not messagebox.askyesno(t('msg_confirm_all_title'),
+                                    t('msg_confirm_all_body').format(count=len(remaining))):
             return
 
         saved = 0
@@ -567,7 +567,7 @@ class AISalesWindow:
             cust_id = inv.customer_id
 
             if any(item.product_id == 0 for item in inv.items):
-                messagebox.showerror("Error", f"Invoice '{inv.customer_name}' has unresolved unmatched items. Skipping.")
+                messagebox.showerror(t('msg_error_title'), t('msg_skip_unresolved').format(name=inv.customer_name))
                 continue
 
             final_items = [{
@@ -590,14 +590,14 @@ class AISalesWindow:
                 continue
 
         self._update_progress()
-        messagebox.showinfo("Done", f"Confirmed {saved} invoices successfully!")
+        messagebox.showinfo(t('msg_done_title'), t('msg_confirmed_all_success').format(count=saved))
 
     def skip_current(self):
         """Skip the current invoice and delete it."""
         if self.current_index < 0:
             return
             
-        if messagebox.askyesno("Confirm", "Are you sure you want to delete this invoice?"):
+        if messagebox.askyesno(t('msg_confirm_title'), t('msg_delete_invoice_confirm')):
             self.parsed_invoices.pop(self.current_index)
             self.invoice_listbox.delete(self.current_index)
             
@@ -631,7 +631,7 @@ class AISalesWindow:
         """Update the progress label."""
         total = len(self.parsed_invoices)
         self.lbl_progress.config(
-            text=f"{self.confirmed_count}/{total} Invoices Confirmed"
+            text=t('lbl_confirmed_progress').format(confirmed=self.confirmed_count, total=total)
         )
         self._update_accuracy_label()
 
@@ -640,7 +640,7 @@ class AISalesWindow:
         stats = self.extractor.matcher.mappings.get("stats", {})
         total_eval = stats.get("total_customers", 0) + (stats.get("total_items", 0) * 2)
         if total_eval == 0:
-            self.lbl_accuracy.config(text="AI Success Rate: N/A")
+            self.lbl_accuracy.config(text=t('lbl_accuracy_na'))
             return
             
         correct = (stats.get("correct_customers", 0) + 
@@ -648,7 +648,7 @@ class AISalesWindow:
                    stats.get("correct_quantities", 0))
                    
         accuracy = (correct / total_eval) * 100
-        self.lbl_accuracy.config(text=f"AI Success Rate: {accuracy:.1f}%")
+        self.lbl_accuracy.config(text=t('lbl_accuracy_value').format(accuracy=accuracy))
 
     def _select_next_unconfirmed(self):
         """Select the next unconfirmed invoice in the list."""

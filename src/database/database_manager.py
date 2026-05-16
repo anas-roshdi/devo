@@ -100,10 +100,43 @@ class DatabaseManager:
             )
         ''')
         
+        # 7. Users Table (Roles & Permissions)
+        self.execute_query('''
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                role TEXT NOT NULL
+            )
+        ''')
+        
         # Insert a default 'General Customer' if table is empty
         check_customer = self.fetch_data("SELECT * FROM customers WHERE name='General Customer'")
         if not check_customer:
             self.execute_query("INSERT INTO customers (name) VALUES ('General Customer')")
+
+        # Insert default users if table is empty
+        check_users = self.fetch_data("SELECT * FROM users")
+        if not check_users:
+            self.execute_query("INSERT INTO users (username, password, role) VALUES ('admin', '123', 'admin')")
+            self.execute_query("INSERT INTO users (username, password, role) VALUES ('cashier', '123', 'cashier')")
+
+    # =========================================================
+    # USER AUTHENTICATION
+    # =========================================================
+
+    def authenticate_user(self, username, password):
+        """
+        Check if the username and password match a record in the database.
+        Returns the user's role if successful, otherwise None.
+        """
+        result = self.fetch_data(
+            "SELECT role FROM users WHERE username = ? AND password = ?",
+            (username, password)
+        )
+        if result:
+            return result[0][0] # Return the role
+        return None
 
     # =========================================================
     # PRODUCT OPERATIONS

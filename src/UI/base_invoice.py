@@ -11,6 +11,7 @@ from datetime import datetime
 from src.database.database_manager import DatabaseManager
 from src.utils.widgets import CalendarHelper
 from config import Colors, Fonts, DATE_FORMAT
+from src.utils.translator import t, get_pack_side, is_rtl
 
 
 class BaseInvoiceWindow:
@@ -70,15 +71,15 @@ class BaseInvoiceWindow:
 
     def get_confirm_button_config(self):
         """Return (text, bg_color) for the confirm button. Override in subclass."""
-        return ("Confirm & Save Invoice", Colors.GREEN_DARK)
+        return (t('btn_confirm_save'), Colors.GREEN_DARK)
 
     def get_total_label_config(self):
         """Return (prefix_text, fg_color) for the total label. Override in subclass."""
-        return ("Total:", Colors.TEXT_DARK_GREEN)
+        return (t('lbl_total'), Colors.TEXT_DARK_GREEN)
 
     def get_price_label(self):
         """Return the label text for the price column. Override in subclass."""
-        return "Unit Price"
+        return t('col_unit_price')
 
     # =========================================================
     # UI CONSTRUCTION
@@ -91,14 +92,14 @@ class BaseInvoiceWindow:
         self.create_header_frame()
 
         # --- Middle Frame: Add Product to Basket ---
-        add_frame = tk.LabelFrame(self.root, text="Add Product", padx=10, pady=10)
+        add_frame = tk.LabelFrame(self.root, text=t('lbl_add_product'), padx=10, pady=10)
         add_frame.pack(fill="x", padx=20, pady=5)
 
-        tk.Label(add_frame, text="Product:").grid(row=0, column=0)
+        tk.Label(add_frame, text=t('lbl_product')).grid(row=0, column=0)
         self.combo_product = ttk.Combobox(add_frame, state="readonly", width=25)
         self.combo_product.grid(row=0, column=1, padx=5)
         
-        tk.Label(add_frame, text="Qty:").grid(row=0, column=2)
+        tk.Label(add_frame, text=t('lbl_qty')).grid(row=0, column=2)
         self.ent_qty = tk.Entry(add_frame, width=10)
         self.ent_qty.grid(row=0, column=3, padx=5)
 
@@ -106,25 +107,25 @@ class BaseInvoiceWindow:
         self.ent_price = tk.Entry(add_frame, width=10)
         self.ent_price.grid(row=0, column=5, padx=5)
 
-        tk.Button(add_frame, text="Add to Basket", bg=Colors.BLUE, fg=Colors.TEXT_WHITE,
+        tk.Button(add_frame, text=t('btn_add_basket'), bg=Colors.BLUE, fg=Colors.TEXT_WHITE,
                   font=Fonts.BTN_SMALL, command=self.add_to_basket).grid(row=0, column=6, padx=15)
 
         # --- Bottom Frame: Treeview Table for Invoice Items ---
         table_frame = tk.Frame(self.root)
         table_frame.pack(fill="both", expand=True, padx=20, pady=10)
 
-        columns = ("ID", "Product Name", "Qty", self.get_price_label(), "Subtotal")
+        columns = (t('col_id'), t('col_product_name'), t('col_qty'), self.get_price_label(), t('col_subtotal'))
         self.tree = ttk.Treeview(table_frame, columns=columns, show="headings")
         for col in columns:
             self.tree.heading(col, text=col)
             self.tree.column(col, width=100, anchor="center")
         
-        self.tree.pack(side="left", fill="both", expand=True)
+        self.tree.pack(side=get_pack_side(tk.LEFT), fill="both", expand=True)
 
         # Scrollbar for the table
         scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=scrollbar.set)
-        scrollbar.pack(side="right", fill="y")
+        scrollbar.pack(side=get_pack_side(tk.RIGHT), fill="y")
 
         # --- Footer Section: Total Display and Action Buttons ---
         footer_panel = tk.Frame(self.root, padx=20, pady=10)
@@ -133,14 +134,14 @@ class BaseInvoiceWindow:
         total_prefix, total_color = self.get_total_label_config()
         self.lbl_total = tk.Label(footer_panel, text=f"{total_prefix} 0.00", 
                                   font=Fonts.HEADER_SMALL, fg=total_color)
-        self.lbl_total.pack(side="right")
+        self.lbl_total.pack(side=get_pack_side(tk.RIGHT))
 
         confirm_text, confirm_color = self.get_confirm_button_config()
         tk.Button(footer_panel, text=confirm_text, bg=confirm_color, fg=Colors.TEXT_WHITE,
-                  font=Fonts.BTN_LARGE, command=self.save_invoice).pack(side="left", pady=10)
+                  font=Fonts.BTN_LARGE, command=self.save_invoice).pack(side=get_pack_side(tk.LEFT), pady=10)
         
-        tk.Button(footer_panel, text="Remove Selected", bg=Colors.RED, fg=Colors.TEXT_WHITE,
-                  command=self.remove_from_basket).pack(side="left", padx=10)
+        tk.Button(footer_panel, text=t('btn_remove_selected'), bg=Colors.RED, fg=Colors.TEXT_WHITE,
+                  command=self.remove_from_basket).pack(side=get_pack_side(tk.LEFT), padx=10)
 
         # --- Event Bindings ---
         self.combo_product.bind("<<ComboboxSelected>>", self.on_product_select)
@@ -210,7 +211,7 @@ class BaseInvoiceWindow:
         price_str = self.ent_price.get()
 
         if not p_name or not qty_str or not price_str:
-            messagebox.showwarning("Input Error", "Please fill all product details.")
+            messagebox.showwarning(t('msg_input_error'), t('msg_fill_all_details'))
             return
 
         try:
@@ -230,7 +231,7 @@ class BaseInvoiceWindow:
             # Reset Qty field for the next item
             self.ent_qty.delete(0, tk.END)
         except ValueError:
-            messagebox.showerror("Error", "Quantity and Price must be numeric.")
+            messagebox.showerror(t('msg_error_title'), t('msg_numbers_req'))
 
         # After adding, move focus back to the product combo for the next item
         self.combo_product.focus_set()
@@ -270,5 +271,5 @@ class BaseInvoiceWindow:
             datetime.strptime(date_str, DATE_FORMAT)
             return date_str
         except ValueError:
-            messagebox.showerror("Date Error", "Please use YYYY-MM-DD format for the date.")
+            messagebox.showerror(t('msg_date_error'), t('msg_invalid_date_format'))
             return None

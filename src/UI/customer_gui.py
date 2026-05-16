@@ -9,12 +9,13 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 from src.database.database_manager import DatabaseManager
 from config import Colors, Fonts, WindowConfig, DEFAULT_CUSTOMER
+from src.utils.translator import t, get_pack_side
 
 
 class CustomerWindow:
     def __init__(self, root):
         self.root = root
-        self.root.title("Devo - Customer & Shop Management")
+        self.root.title(t('customer_win_title'))
         
         geo, min_w, min_h = WindowConfig.CUSTOMERS
         self.root.geometry(geo)
@@ -35,36 +36,36 @@ class CustomerWindow:
         paned.pack(fill="both", expand=True, padx=10, pady=10)
 
         # --- Left Side: Input Form Frame ---
-        form_frame = tk.LabelFrame(paned, text="Customer Information", padx=10, pady=10)
+        form_frame = tk.LabelFrame(paned, text=t('lbl_customer_info'), padx=10, pady=10)
         paned.add(form_frame, minsize=220)
 
-        tk.Label(form_frame, text="Shop/Customer Name:").pack(anchor="w")
+        tk.Label(form_frame, text=t('lbl_customer_name')).pack(anchor="w")
         self.ent_name = tk.Entry(form_frame)
         self.ent_name.pack(fill="x", pady=5)
 
-        tk.Label(form_frame, text="Phone Number:").pack(anchor="w")
+        tk.Label(form_frame, text=t('lbl_phone_number')).pack(anchor="w")
         self.ent_phone = tk.Entry(form_frame)
         self.ent_phone.pack(fill="x", pady=5)
 
-        tk.Label(form_frame, text="Address/Location:").pack(anchor="w")
+        tk.Label(form_frame, text=t('lbl_address')).pack(anchor="w")
         self.ent_address = tk.Entry(form_frame)
         self.ent_address.pack(fill="x", pady=5)
 
         # Action Buttons for CRUD operations
-        tk.Button(form_frame, text="Add Customer", bg=Colors.GREEN_DARK, fg=Colors.TEXT_WHITE,
+        tk.Button(form_frame, text=t('btn_add_customer'), bg=Colors.GREEN_DARK, fg=Colors.TEXT_WHITE,
                   command=self.add_customer).pack(fill="x", pady=10)
         
-        tk.Button(form_frame, text="Update Selected", bg=Colors.ORANGE,
+        tk.Button(form_frame, text=t('btn_update_selected'), bg=Colors.ORANGE,
                   command=self.update_customer).pack(fill="x", pady=5)
         
-        tk.Button(form_frame, text="Delete Customer", bg=Colors.RED, fg=Colors.TEXT_WHITE,
+        tk.Button(form_frame, text=t('btn_delete_customer'), bg=Colors.RED, fg=Colors.TEXT_WHITE,
                   command=self.delete_customer).pack(fill="x", pady=5)
 
         # --- Right Side: Customer Data Table (Treeview) ---
         table_frame = tk.Frame(paned)
         paned.add(table_frame, minsize=300)
 
-        columns = ("ID", "Name", "Phone", "Address")
+        columns = (t('col_id'), t('col_name'), t('col_phone'), t('col_address'))
         self.tree = ttk.Treeview(table_frame, columns=columns, show="headings")
         
         # Configure table headers and column widths
@@ -103,13 +104,13 @@ class CustomerWindow:
         if name:
             try:
                 self.db.add_customer(name, phone, address)
-                messagebox.showinfo("Success", f"Customer '{name}' added successfully.")
+                messagebox.showinfo(t('msg_success_title'), t('msg_customer_added').format(name=name))
                 self.clear_fields()
                 self.load_customers()
             except Exception as e:
-                messagebox.showerror("Error", f"Could not add customer: {e}")
+                messagebox.showerror(t('msg_error_title'), t('msg_customer_add_err').format(e=e))
         else:
-            messagebox.showwarning("Warning", "Customer name is required.")
+            messagebox.showwarning(t('msg_warning_title'), t('msg_customer_name_req'))
 
     def on_select(self, event):
         """Auto-fill entry fields when a row is selected in the table."""
@@ -128,16 +129,16 @@ class CustomerWindow:
         """Apply changes from the entry fields to the selected customer record."""
         selected = self.tree.focus()
         if not selected:
-            messagebox.showwarning("Warning", "Please select a customer from the table to update.")
+            messagebox.showwarning(t('msg_warning_title'), t('msg_select_customer_update'))
             return
 
         c_id = self.tree.item(selected, "values")[0]
         try:
             self.db.update_customer(c_id, self.ent_name.get(), self.ent_phone.get(), self.ent_address.get())
-            messagebox.showinfo("Updated", "Customer information has been updated.")
+            messagebox.showinfo(t('msg_updated_title'), t('msg_customer_updated'))
             self.load_customers()
         except Exception as e:
-            messagebox.showerror("Error", f"Update failed: {e}")
+            messagebox.showerror(t('msg_error_title'), t('msg_update_failed').format(e=e))
 
     def delete_customer(self):
         """Remove the selected customer from the database after confirmation."""
@@ -150,16 +151,16 @@ class CustomerWindow:
         
         # Safeguard: Prevent deletion of the default 'General Customer'
         if name == DEFAULT_CUSTOMER:
-            messagebox.showerror("Error", f"The default '{DEFAULT_CUSTOMER}' record cannot be deleted.")
+            messagebox.showerror(t('msg_error_title'), t('msg_default_customer_del_err').format(default_customer=DEFAULT_CUSTOMER))
             return
 
-        if messagebox.askyesno("Confirm Deletion", f"Are you sure you want to delete '{name}'?"):
+        if messagebox.askyesno(t('msg_confirm_deletion'), t('msg_confirm_delete_customer').format(name=name)):
             try:
                 self.db.delete_customer(c_id)
                 self.load_customers()
                 self.clear_fields()
             except Exception as e:
-                messagebox.showerror("Error", f"Could not delete record: {e}")
+                messagebox.showerror(t('msg_error_title'), t('msg_delete_record_err').format(e=e))
 
     def clear_fields(self):
         """Reset all form entries to empty."""

@@ -6,6 +6,11 @@ are defined here for easy maintenance and consistency across the app.
 """
 
 # =====================================================
+# SYSTEM CONFIGURATION
+# =====================================================
+ACTIVE_LANGUAGE = "ar"  # 'ar' for Arabic, 'en' for English
+
+# =====================================================
 # DATABASE CONFIGURATION
 # =====================================================
 DB_NAME = "devo_business.sqlite"

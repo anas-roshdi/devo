@@ -171,7 +171,7 @@ class ProductMatcher:
         Match a customer hint text to a customer in the database.
         
         Args:
-            hint: Customer name hint (e.g. "حمضها", "نوره")
+            hint: Customer name hint 
             customer_list: List of (id, name, phone, ...) tuples from DB
         Returns:
             (customer_id, customer_name) or (1, "General Customer") if not found.

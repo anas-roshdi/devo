@@ -11,6 +11,7 @@ from datetime import datetime
 from src.UI.base_invoice import BaseInvoiceWindow
 from src.utils.widgets import CalendarHelper
 from config import Colors, Fonts, WindowConfig, DEFAULT_CUSTOMER
+from src.utils.translator import t
 
 
 class SalesInvoiceWindow(BaseInvoiceWindow):
@@ -21,7 +22,7 @@ class SalesInvoiceWindow(BaseInvoiceWindow):
     # =========================================================
 
     def get_window_title(self):
-        return "Devo - Smart Sales Invoice"
+        return t('sales_win_title')
 
     def get_window_geometry(self):
         return WindowConfig.SALES_INVOICE
@@ -30,13 +31,13 @@ class SalesInvoiceWindow(BaseInvoiceWindow):
         return "sellable"
 
     def get_confirm_button_config(self):
-        return ("Confirm & Save Invoice", Colors.GREEN_DARK)
+        return (t('btn_confirm_invoice'), Colors.GREEN_DARK)
 
     def get_total_label_config(self):
-        return ("Total:", Colors.TEXT_DARK_GREEN)
+        return (t('lbl_total'), Colors.TEXT_DARK_GREEN)
 
     def get_price_label(self):
-        return "Unit Price"
+        return t('lbl_unit_price')
 
     # =========================================================
     # HEADER: Customer & Date Selection
@@ -44,14 +45,14 @@ class SalesInvoiceWindow(BaseInvoiceWindow):
 
     def create_header_frame(self):
         """Create the top frame with customer selection and date picker."""
-        top_frame = tk.LabelFrame(self.root, text="Invoice Header", padx=10, pady=10)
+        top_frame = tk.LabelFrame(self.root, text=t('lbl_invoice_header'), padx=10, pady=10)
         top_frame.pack(fill="x", padx=20, pady=10)
 
-        tk.Label(top_frame, text="Select Shop/Customer:").grid(row=0, column=0, sticky="w")
+        tk.Label(top_frame, text=t('lbl_select_customer')).grid(row=0, column=0, sticky="w")
         self.combo_customer = ttk.Combobox(top_frame, state="readonly", width=30)
         self.combo_customer.grid(row=0, column=1, padx=10)
 
-        tk.Label(top_frame, text="Date:").grid(row=0, column=2, padx=10)
+        tk.Label(top_frame, text=t('lbl_date')).grid(row=0, column=2, padx=10)
         
         # Date field
         self.ent_date = tk.Entry(top_frame, width=15)
@@ -123,7 +124,7 @@ class SalesInvoiceWindow(BaseInvoiceWindow):
     def save_invoice(self):
         """Save the full invoice (Header and Details) to the database."""
         if not self.basket:
-            messagebox.showwarning("Empty", "No items in the basket.")
+            messagebox.showwarning(t('msg_empty_title'), t('msg_empty_basket'))
             return
 
         date_str = self.get_validated_date()
@@ -136,10 +137,10 @@ class SalesInvoiceWindow(BaseInvoiceWindow):
 
         try:
             invoice_id = self.db.save_sale_invoice(customer_id, date_str, total_amount, self.basket)
-            messagebox.showinfo("Success", f"Invoice #{invoice_id} saved successfully for {customer_name}.")
+            messagebox.showinfo(t('msg_success_title'), t('msg_invoice_saved').format(invoice_id=invoice_id, customer_name=customer_name))
             self.clear_invoice()
         except Exception as e:
-            messagebox.showerror("Database Error", f"Failed to save: {e}")
+            messagebox.showerror(t('msg_db_error'), t('msg_failed_save').format(e=e))
 
 
 if __name__ == "__main__":
