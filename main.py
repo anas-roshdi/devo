@@ -59,54 +59,53 @@ class DevoDashboard:
         tk.Label(header_frame, text=t('dashboard_header'), fg=Colors.TEXT_WHITE, 
                  bg=Colors.PRIMARY_DARK, font=Fonts.HEADER_LARGE, pady=20).place(relx=0.5, rely=0.5, anchor="center")
         
-        # Language switch button in header (Smaller, single word)
         tk.Button(header_frame, text=t('btn_lang_toggle'), bg=Colors.GRAY, fg=Colors.TEXT_WHITE,
                   font=("Arial", 8, "bold"), width=8, command=self.toggle_language).pack(side=get_pack_side(tk.RIGHT), padx=20, pady=25)
 
         # --- Main Navigation Menu Grid ---
-        menu_frame = tk.Frame(self.root, bg=Colors.BACKGROUND, pady=20)
-        menu_frame.pack(expand=True)
+        menu_frame = tk.Frame(self.root, bg=Colors.BACKGROUND)
+        # الهوامش الخارجية هنا (padx=80, pady=40) تمنع الأزرار من التمدد بشكل مفرط وتضمن بقاء الأزرار السفلية
+        menu_frame.pack(expand=True, fill="both", padx=130, pady=40)
 
-        # Standard button style for the main menu grid
-        btn_style = {"font": Fonts.BODY_BOLD, "width": 22, "height": 4, 
-                     "fg": Colors.TEXT_WHITE, "bd": 0}
+        # توزيع المساحات بالتساوي على الأعمدة والصفوف
+        menu_frame.grid_columnconfigure(0, weight=1, uniform="group1")
+        menu_frame.grid_columnconfigure(1, weight=1, uniform="group1")
+        menu_frame.grid_rowconfigure(0, weight=1, uniform="group2")
+        menu_frame.grid_rowconfigure(1, weight=1, uniform="group2")
+        menu_frame.grid_rowconfigure(2, weight=1, uniform="group2")
 
-        # Button 1: Product Management
+        # تم حذف (width) و (height) الثابتة لتعتمد الأزرار كلياً على مرونة الشاشة
+        btn_style = {"font": Fonts.BODY_BOLD, "fg": Colors.TEXT_WHITE, "bd": 0}
+
+        # مسافة صغيرة (10 بكسل) بين الأزرار لتجنب التصاقها، مع تفعيل التمدد (nsew)
         tk.Button(menu_frame, text=t('btn_manage_products'), bg=Colors.BLUE, **btn_style,
-                  command=self.open_manage_products).grid(row=0, column=0, padx=15, pady=15)
+                  command=self.open_manage_products).grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
 
-        # Button 2: Customer & Shop Management
         tk.Button(menu_frame, text=t('btn_manage_customers'), bg=Colors.PURPLE, **btn_style,
-                  command=self.open_customers).grid(row=0, column=1, padx=15, pady=15)
+                  command=self.open_customers).grid(row=0, column=1, padx=10, pady=10, sticky="nsew")
 
-        # Button 3: Sales Invoicing Module
         tk.Button(menu_frame, text=t('btn_sales_invoice'), bg=Colors.GREEN, **btn_style,
-                  command=self.open_sales).grid(row=1, column=0, padx=15, pady=15)
+                  command=self.open_sales).grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
 
-        # Button 4: Purchase Invoicing Module
         tk.Button(menu_frame, text=t('btn_purchase_invoice'), bg=Colors.RED, **btn_style,
-                  command=self.open_purchases).grid(row=1, column=1, padx=15, pady=15)
+                  command=self.open_purchases).grid(row=1, column=1, padx=10, pady=10, sticky="nsew")
 
-        # Button 5: AI Sales Entry (NEW)
         tk.Button(menu_frame, text=t('btn_ai_sales'), bg=Colors.DARK_GRAY, **btn_style,
-                  command=self.open_ai_sales).grid(row=2, column=0, padx=15, pady=15)
+                  command=self.open_ai_sales).grid(row=2, column=0, padx=10, pady=10, sticky="nsew")
 
-        # Button 6: Comprehensive Financial Reports
         report_state = tk.NORMAL if self.role == 'admin' else tk.DISABLED
         tk.Button(menu_frame, text=t('btn_financial_reports'), bg=Colors.YELLOW, 
                   **{**btn_style, "fg": Colors.TEXT_BLACK},
-                  command=self.open_reports, state=report_state).grid(row=2, column=1, padx=15, pady=15)
+                  command=self.open_reports, state=report_state).grid(row=2, column=1, padx=10, pady=10, sticky="nsew")
 
         # --- Bottom Utility Section ---
         bottom_frame = tk.Frame(self.root, bg=Colors.BACKGROUND)
         bottom_frame.pack(side="bottom", fill="x", padx=20, pady=15)
 
-        # Logout Button (Packed to one side)
         tk.Button(bottom_frame, text=t('btn_logout', default="🚪 Logout"), bg=Colors.RED_DARK, fg=Colors.TEXT_WHITE,
                   font=("Arial", 9, "bold"), width=15, 
                   command=self.logout).pack(side=get_pack_side(tk.LEFT), padx=10, pady=10)
 
-        # Backup Database Button (Packed to the opposite side)
         backup_state = tk.NORMAL if self.role == 'admin' else tk.DISABLED
         tk.Button(bottom_frame, text=t('btn_backup', default="💾 Backup Database"), bg=Colors.GRAY, fg=Colors.TEXT_WHITE,
                   font=("Arial", 9, "bold"), width=20, 
