@@ -10,12 +10,19 @@ Matches raw Arabic text lines to products in the database using:
 import re
 import json
 import os
+import sys
 from difflib import SequenceMatcher
 from dataclasses import dataclass
 
 
 # Paths
-MAPPINGS_FILE = os.path.join(os.path.dirname(__file__), "learned_mappings.json")
+# Determine the absolute base directory (works for both PyInstaller executable and regular script)
+if getattr(sys, 'frozen', False):
+    base_dir = os.path.dirname(sys.executable)
+else:
+    base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+
+MAPPINGS_FILE = os.path.join(base_dir, "learned_mappings.json")
 
 # Size keyword mappings
 SIZE_KEYWORDS = {
