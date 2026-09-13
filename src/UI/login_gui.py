@@ -3,10 +3,20 @@ from tkinter import messagebox
 from src.database.database_manager import DatabaseManager
 from config import Colors, Fonts
 from src.utils.translator import t
+from src.utils.app_utils import set_app_icon
+import ctypes
 
 class LoginScreen:
     def __init__(self):
+        # --- Windows Taskbar Icon Fix ---
+        try:
+            myappid = 'devo.accounting.app.1.0'
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        except Exception:
+            pass
+        # --------------------------------
         self.root = tk.Tk()
+        set_app_icon(self.root)
         self.root.title(t('login_title', default='Devo - Login'))
         
         # Center the window
@@ -100,8 +110,10 @@ class LoginScreen:
         if not username or not password:
             messagebox.showwarning(
                 t('msg_warning_title', default='Warning'), 
-                t('msg_login_empty', default='Please enter username and password.')
+                t('msg_login_empty', default='Please enter username and password.'),
+                parent=self.root
             )
+            self.root.focus_force()
             return
             
         role = self.db.authenticate_user(username, password)
@@ -113,8 +125,10 @@ class LoginScreen:
             # Login failed
             messagebox.showerror(
                 t('msg_error_title', default='Error'), 
-                t('msg_login_failed', default='Invalid username or password.')
+                t('msg_login_failed', default='Invalid username or password.'),
+                parent=self.root
             )
+            self.root.focus_force()
             
     def on_close(self):
         """Handle window close event without logging in."""

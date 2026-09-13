@@ -203,6 +203,7 @@ class ReportsWindow:
     def generate_report(self):
         """Fetch sales and purchase records and update the summary cards based on selection."""
         customer = self.combo_customer.get()
+        db_customer_param = ALL_CUSTOMERS_LABEL if customer == t('all_customers') else customer
         start = self.ent_from.get()
         end = self.ent_to.get()
 
@@ -213,7 +214,7 @@ class ReportsWindow:
             self.tree.column(col, anchor="center", width=120)
 
         # Fetch data from DatabaseManager
-        sales, purchases = self.db.get_financial_report(customer, start, end)
+        sales, purchases = self.db.get_financial_report(db_customer_param, start, end)
 
         # Merge results and populate the Treeview
         self.current_report_data = list(sales) + list(purchases)
@@ -308,7 +309,8 @@ class ReportsWindow:
             start_dt = datetime.strptime(current_start, "%Y-%m-%d")
             end_dt = datetime.strptime(current_end, "%Y-%m-%d")
         except ValueError:
-            messagebox.showerror(t('msg_error_title'), t('msg_invalid_date_format'))
+            messagebox.showerror(t('msg_error_title'), t('msg_invalid_date_format'), parent=self.root)
+            self.root.focus_force()
             return
 
         if chart_type == "Top Products":
@@ -339,13 +341,17 @@ class ReportsWindow:
         if not group_fields: group_fields = ['name']  # Default fallback
 
         # Fetch data from database
+        customer = self.combo_customer.get()
+        db_customer_param = ALL_CUSTOMERS_LABEL if customer == t('all_customers') else customer
+        
         top_products = self.db.get_top_products_dynamic(
             self.ent_from.get(), self.ent_to.get(), 
-            group_fields, self.combo_customer.get(), self.var_top_limit.get()
+            group_fields, db_customer_param, self.var_top_limit.get()
         )
         
         if not top_products:
-            messagebox.showinfo(t('msg_no_data'), t('msg_no_product_sales'))
+            messagebox.showinfo(t('msg_no_data'), t('msg_no_product_sales'), parent=self.root)
+            self.root.focus_force()
             return None 
 
         # Update product statistics card
@@ -377,7 +383,8 @@ class ReportsWindow:
         )
         
         if not perf_data:
-            messagebox.showinfo(t('msg_no_data'), t('msg_no_customer_sales'))
+            messagebox.showinfo(t('msg_no_data'), t('msg_no_customer_sales'), parent=self.root)
+            self.root.focus_force()
             return None
         
         # Update summary cards
@@ -414,19 +421,24 @@ class ReportsWindow:
         """Export the current viewable report data to an Excel spreadsheet."""
         import pandas as pd
         if not self.current_report_data: 
-            messagebox.showwarning(t('msg_empty_title'), t('msg_no_data_export'))
+            messagebox.showwarning(t('msg_empty_title'), t('msg_no_data_export'), parent=self.root)
+            self.root.focus_force()
             return
         
         file_path = filedialog.asksaveasfilename(defaultextension=".xlsx")
         if file_path:
             try:
                 pd.DataFrame(self.current_report_data).to_excel(file_path, index=False)
-                messagebox.showinfo(t('msg_success_title'), t('msg_report_exported'))
+                messagebox.showinfo(t('msg_success_title'), t('msg_report_exported'), parent=self.root)
+                self.root.focus_force()
             except Exception as e:
-                messagebox.showerror(t('msg_error_title'), t('msg_export_failed').format(e=e))
+                messagebox.showerror(t('msg_error_title'), t('msg_export_failed').format(e=e), parent=self.root)
+                self.root.focus_force()
 
 # Entry point for testing the module directly
 if __name__ == "__main__":
+    from src.utils.app_utils import set_app_icon
     root = tk.Tk()
+    set_app_icon(root)
     app = ReportsWindow(root)
     root.mainloop()

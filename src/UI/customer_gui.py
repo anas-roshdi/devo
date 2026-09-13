@@ -104,13 +104,16 @@ class CustomerWindow:
         if name:
             try:
                 self.db.add_customer(name, phone, address)
-                messagebox.showinfo(t('msg_success_title'), t('msg_customer_added').format(name=name))
+                messagebox.showinfo(t('msg_success_title'), t('msg_customer_added').format(name=name), parent=self.root)
+                self.root.focus_force()
                 self.clear_fields()
                 self.load_customers()
             except Exception as e:
-                messagebox.showerror(t('msg_error_title'), t('msg_customer_add_err').format(e=e))
+                messagebox.showerror(t('msg_error_title'), t('msg_customer_add_err').format(e=e), parent=self.root)
+                self.root.focus_force()
         else:
-            messagebox.showwarning(t('msg_warning_title'), t('msg_customer_name_req'))
+            messagebox.showwarning(t('msg_warning_title'), t('msg_customer_name_req'), parent=self.root)
+            self.root.focus_force()
 
     def on_select(self, event):
         """Auto-fill entry fields when a row is selected in the table."""
@@ -129,16 +132,19 @@ class CustomerWindow:
         """Apply changes from the entry fields to the selected customer record."""
         selected = self.tree.focus()
         if not selected:
-            messagebox.showwarning(t('msg_warning_title'), t('msg_select_customer_update'))
+            messagebox.showwarning(t('msg_warning_title'), t('msg_select_customer_update'), parent=self.root)
+            self.root.focus_force()
             return
 
         c_id = self.tree.item(selected, "values")[0]
         try:
             self.db.update_customer(c_id, self.ent_name.get(), self.ent_phone.get(), self.ent_address.get())
-            messagebox.showinfo(t('msg_updated_title'), t('msg_customer_updated'))
+            messagebox.showinfo(t('msg_updated_title'), t('msg_customer_updated'), parent=self.root)
+            self.root.focus_force()
             self.load_customers()
         except Exception as e:
-            messagebox.showerror(t('msg_error_title'), t('msg_update_failed').format(e=e))
+            messagebox.showerror(t('msg_error_title'), t('msg_update_failed').format(e=e), parent=self.root)
+            self.root.focus_force()
 
     def delete_customer(self):
         """Remove the selected customer from the database after confirmation."""
@@ -151,16 +157,21 @@ class CustomerWindow:
         
         # Safeguard: Prevent deletion of the default 'General Customer'
         if name == DEFAULT_CUSTOMER:
-            messagebox.showerror(t('msg_error_title'), t('msg_default_customer_del_err').format(default_customer=DEFAULT_CUSTOMER))
+            messagebox.showerror(t('msg_error_title'), t('msg_default_customer_del_err').format(default_customer=DEFAULT_CUSTOMER), parent=self.root)
+            self.root.focus_force()
             return
 
-        if messagebox.askyesno(t('msg_confirm_deletion'), t('msg_confirm_delete_customer').format(name=name)):
+        if messagebox.askyesno(t('msg_confirm_deletion'), t('msg_confirm_delete_customer').format(name=name), parent=self.root):
+            self.root.focus_force()
             try:
                 self.db.delete_customer(c_id)
                 self.load_customers()
                 self.clear_fields()
             except Exception as e:
-                messagebox.showerror(t('msg_error_title'), t('msg_delete_record_err').format(e=e))
+                messagebox.showerror(t('msg_error_title'), t('msg_delete_record_err').format(e=e), parent=self.root)
+                self.root.focus_force()
+        else:
+            self.root.focus_force()
 
     def clear_fields(self):
         """Reset all form entries to empty."""
@@ -169,6 +180,8 @@ class CustomerWindow:
         self.ent_address.delete(0, tk.END)
 
 if __name__ == "__main__":
+    from src.utils.app_utils import set_app_icon
     root = tk.Tk()
+    set_app_icon(root)
     app = CustomerWindow(root)
     root.mainloop()

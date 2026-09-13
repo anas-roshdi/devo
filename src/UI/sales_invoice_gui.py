@@ -124,7 +124,8 @@ class SalesInvoiceWindow(BaseInvoiceWindow):
     def save_invoice(self):
         """Save the full invoice (Header and Details) to the database."""
         if not self.basket:
-            messagebox.showwarning(t('msg_empty_title'), t('msg_empty_basket'))
+            messagebox.showwarning(t('msg_empty_title'), t('msg_empty_basket'), parent=self.root)
+            self.root.focus_force()
             return
 
         date_str = self.get_validated_date()
@@ -137,13 +138,17 @@ class SalesInvoiceWindow(BaseInvoiceWindow):
 
         try:
             invoice_id = self.db.save_sale_invoice(customer_id, date_str, total_amount, self.basket)
-            messagebox.showinfo(t('msg_success_title'), t('msg_invoice_saved').format(invoice_id=invoice_id, customer_name=customer_name))
+            messagebox.showinfo(t('msg_success_title'), t('msg_invoice_saved').format(invoice_id=invoice_id, customer_name=customer_name), parent=self.root)
+            self.root.focus_force()
             self.clear_invoice()
         except Exception as e:
-            messagebox.showerror(t('msg_db_error'), t('msg_failed_save').format(e=e))
+            messagebox.showerror(t('msg_db_error'), t('msg_failed_save').format(e=e), parent=self.root)
+            self.root.focus_force()
 
 
 if __name__ == "__main__":
+    from src.utils.app_utils import set_app_icon
     root = tk.Tk()
+    set_app_icon(root)
     app = SalesInvoiceWindow(root)
     root.mainloop()

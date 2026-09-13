@@ -4,6 +4,7 @@ import tkinter as tk
 from tkinter import messagebox
 import hashlib
 import subprocess
+from src.utils.app_utils import set_app_icon
 
 # CRITICAL: This must exactly match the generator's salt
 SECRET_SALT = "Devo_Pro_Edition_2026_@Secure!_anas"
@@ -41,6 +42,7 @@ def is_licensed():
 def show_license_screen():
     """Displays the activation GUI if not licensed."""
     root = tk.Tk()
+    set_app_icon(root)
     root.title("Devo - System Activation")
     root.geometry("450x250")
     

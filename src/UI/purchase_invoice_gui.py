@@ -75,7 +75,8 @@ class PurchaseInvoiceWindow(BaseInvoiceWindow):
     def save_invoice(self):
         """Finalize the purchase by saving the header and items to the database."""
         if not self.basket:
-            messagebox.showwarning(t('msg_empty_title'), t('msg_no_items_save'))
+            messagebox.showwarning(t('msg_empty_title'), t('msg_no_items_save'), parent=self.root)
+            self.root.focus_force()
             return
 
         date_str = self.get_validated_date()
@@ -87,14 +88,18 @@ class PurchaseInvoiceWindow(BaseInvoiceWindow):
 
         try:
             p_invoice_id = self.db.save_purchase_invoice(supplier, date_str, total_amount, self.basket)
-            messagebox.showinfo(t('msg_success_title'), t('msg_purchase_saved').format(invoice_id=p_invoice_id))
+            messagebox.showinfo(t('msg_success_title'), t('msg_purchase_saved').format(invoice_id=p_invoice_id), parent=self.root)
+            self.root.focus_force()
             self.clear_invoice()
             self.ent_supplier.delete(0, tk.END)
         except Exception as e:
-            messagebox.showerror(t('msg_db_error'), t('msg_failed_save').format(e=e))
+            messagebox.showerror(t('msg_db_error'), t('msg_failed_save').format(e=e), parent=self.root)
+            self.root.focus_force()
 
 
 if __name__ == "__main__":
+    from src.utils.app_utils import set_app_icon
     root = tk.Tk()
+    set_app_icon(root)
     app = PurchaseInvoiceWindow(root)
     root.mainloop()

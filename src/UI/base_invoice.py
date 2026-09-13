@@ -211,7 +211,8 @@ class BaseInvoiceWindow:
         price_str = self.ent_price.get()
 
         if not p_name or not qty_str or not price_str:
-            messagebox.showwarning(t('msg_input_error'), t('msg_fill_all_details'))
+            messagebox.showwarning(t('msg_input_error'), t('msg_fill_all_details'), parent=self.root)
+            self.root.focus_force()
             return
 
         try:
@@ -231,7 +232,8 @@ class BaseInvoiceWindow:
             # Reset Qty field for the next item
             self.ent_qty.delete(0, tk.END)
         except ValueError:
-            messagebox.showerror(t('msg_error_title'), t('msg_numbers_req'))
+            messagebox.showerror(t('msg_error_title'), t('msg_numbers_req'), parent=self.root)
+            self.root.focus_force()
 
         # After adding, move focus back to the product combo for the next item
         self.combo_product.focus_set()
@@ -271,5 +273,6 @@ class BaseInvoiceWindow:
             datetime.strptime(date_str, DATE_FORMAT)
             return date_str
         except ValueError:
-            messagebox.showerror(t('msg_date_error'), t('msg_invalid_date_format'))
+            messagebox.showerror(t('msg_date_error'), t('msg_invalid_date_format'), parent=self.root)
+            self.root.focus_force()
             return None

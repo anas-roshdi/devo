@@ -131,22 +131,26 @@ class ManageProductsWindow:
         
         # Validate required fields
         if not name or not price:
-            messagebox.showwarning(t('msg_input_error_title'), t('msg_add_product_req'))
+            messagebox.showwarning(t('msg_input_error_title'), t('msg_add_product_req'), parent=self.root)
+            self.root.focus_force()
             return
         
         try:
             self.db.add_product(name, self.ent_cat.get(), float(price), self.combo_type.get(), self.ent_size.get())
-            messagebox.showinfo(t('msg_success_title'), t('msg_product_added').format(name=name))
+            messagebox.showinfo(t('msg_success_title'), t('msg_product_added').format(name=name), parent=self.root)
+            self.root.focus_force()
             self.load_data()
             self.clear_fields()
         except Exception as e:
-            messagebox.showerror(t('msg_error_title'), t('msg_product_add_err').format(e=e))
+            messagebox.showerror(t('msg_error_title'), t('msg_product_add_err').format(e=e), parent=self.root)
+            self.root.focus_force()
 
     def update_product(self):
         """Update the selected product's information in the database."""
         p_id = self.ent_id.get()
         if not p_id:
-            messagebox.showwarning(t('msg_selection_title'), t('msg_select_update'))
+            messagebox.showwarning(t('msg_selection_title'), t('msg_select_update'), parent=self.root)
+            self.root.focus_force()
             return
 
         try:
@@ -154,20 +158,25 @@ class ManageProductsWindow:
                 p_id, self.ent_name.get(), self.ent_cat.get(), 
                 float(self.ent_price.get()), self.combo_type.get(), self.ent_size.get()
             )
-            messagebox.showinfo(t('msg_success_title'), t('msg_product_updated'))
+            messagebox.showinfo(t('msg_success_title'), t('msg_product_updated'), parent=self.root)
+            self.root.focus_force()
             self.load_data()
         except Exception as e:
-            messagebox.showerror(t('msg_error_title'), t('msg_update_failed').format(e=e))
+            messagebox.showerror(t('msg_error_title'), t('msg_update_failed').format(e=e), parent=self.root)
+            self.root.focus_force()
 
     def delete_product(self):
         """Permanently remove the selected product from the database."""
         p_id = self.ent_id.get()
         if not p_id: return
         
-        if messagebox.askyesno(t('msg_confirm_title'), t('msg_delete_confirm')):
+        if messagebox.askyesno(t('msg_confirm_title'), t('msg_delete_confirm'), parent=self.root):
+            self.root.focus_force()
             self.db.delete_product(p_id)
             self.load_data()
             self.clear_fields()
+        else:
+            self.root.focus_force()
 
     def on_row_select(self, event):
         """Fill input fields with details of the selected row in the table."""
@@ -202,6 +211,8 @@ class ManageProductsWindow:
         self.combo_type.current(DEFAULT_PRODUCT_TYPE_INDEX)
 
 if __name__ == "__main__":
+    from src.utils.app_utils import set_app_icon
     app_root = tk.Tk()
+    set_app_icon(app_root)
     ManageProductsWindow(app_root)
     app_root.mainloop()

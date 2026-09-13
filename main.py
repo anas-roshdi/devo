@@ -9,7 +9,17 @@ import tkinter as tk
 from tkinter import messagebox
 import sys
 import os
+import ctypes
 from src.utils.license_verifier import is_licensed, show_license_screen
+from src.utils.app_utils import set_app_icon
+
+# --- Windows Taskbar Icon Fix ---
+try:
+    myappid = 'devo.accounting.app.1.0'
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+except Exception:
+    pass
+# --------------------------------
 
 # --- GATEKEEPER CHECK ---
 # If the app is not licensed, show the activation screen
@@ -172,22 +182,26 @@ class DevoDashboard:
         AISalesWindow(new_win)
 
     def toggle_language(self):
-        """Toggle active language in config.py and restart app."""
+        """Toggle active language and restart app."""
         new_lang = "en" if ACTIVE_LANGUAGE == "ar" else "ar"
         lang_display = "English" if new_lang == "en" else "العربية"
         
-        # 1. Update config.py file
-        config_path = os.path.join(os.path.dirname(__file__), "config.py")
+        # 1. Update settings.json file
+        import json
+        settings_path = os.path.join(os.getcwd(), "settings.json")
         try:
-            with open(config_path, "r", encoding="utf-8") as f:
-                lines = f.readlines()
+            settings = {}
+            if os.path.exists(settings_path):
+                with open(settings_path, "r", encoding="utf-8") as f:
+                    try:
+                        settings = json.load(f)
+                    except json.JSONDecodeError:
+                        pass
             
-            with open(config_path, "w", encoding="utf-8") as f:
-                for line in lines:
-                    if line.startswith("ACTIVE_LANGUAGE ="):
-                        f.write(f"ACTIVE_LANGUAGE = \"{new_lang}\"  # 'ar' for Arabic, 'en' for English\n")
-                    else:
-                        f.write(line)
+            settings["language"] = new_lang
+            
+            with open(settings_path, "w", encoding="utf-8") as f:
+                json.dump(settings, f, ensure_ascii=False, indent=4)
             
             # 2. Inform and Restart
             messagebox.showinfo(t('msg_lang_changed_title'), 
@@ -212,6 +226,7 @@ def run_app():
 
         # Standard application entry point
         root = tk.Tk()
+        set_app_icon(root)
         app = DevoDashboard(root, role=role)
         root.mainloop()
         

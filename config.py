@@ -5,10 +5,22 @@ All shared constants (colors, fonts, window sizes, database settings)
 are defined here for easy maintenance and consistency across the app.
 """
 
+import os
+import json
+
 # =====================================================
 # SYSTEM CONFIGURATION
 # =====================================================
-ACTIVE_LANGUAGE = "ar"  # 'ar' for Arabic, 'en' for English
+ACTIVE_LANGUAGE = "en"  # default
+
+settings_path = os.path.join(os.getcwd(), "settings.json")
+try:
+    if os.path.exists(settings_path):
+        with open(settings_path, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+            ACTIVE_LANGUAGE = settings.get("language", "en")
+except Exception:
+    pass
 
 # =====================================================
 # DATABASE CONFIGURATION

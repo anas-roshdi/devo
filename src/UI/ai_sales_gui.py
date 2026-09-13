@@ -243,7 +243,8 @@ class AISalesWindow:
         """Parse the pasted WhatsApp text using AI engine."""
         raw = self.txt_input.get("1.0", tk.END).strip()
         if not raw:
-            messagebox.showwarning(t('msg_empty_title'), t('msg_paste_first'))
+            messagebox.showwarning(t('msg_empty_title'), t('msg_paste_first'), parent=self.root)
+            self.root.focus_force()
             return
 
         # Set year
@@ -259,7 +260,8 @@ class AISalesWindow:
 
         if not self.parsed_invoices:
             messagebox.showinfo(t('msg_no_results'),
-                                t('msg_no_invoices_found'))
+                                t('msg_no_invoices_found'), parent=self.root)
+            self.root.focus_force()
             return
 
         # Apply smart pricing based on recognized customer names
@@ -280,7 +282,8 @@ class AISalesWindow:
         self.on_invoice_select(None)
 
         messagebox.showinfo(t('msg_parsed_title'),
-                            t('msg_parsed_body').format(count=len(self.parsed_invoices)))
+                            t('msg_parsed_body').format(count=len(self.parsed_invoices)), parent=self.root)
+        self.root.focus_force()
 
     # ==========================================================
     # INVOICE NAVIGATION
@@ -404,7 +407,8 @@ class AISalesWindow:
             new_qty = float(self.ent_edit_qty.get())
             new_price = float(self.ent_edit_price.get())
         except ValueError:
-            messagebox.showerror(t('msg_error_title'), t('msg_numbers_req'))
+            messagebox.showerror(t('msg_error_title'), t('msg_numbers_req'), parent=self.root)
+            self.root.focus_force()
             return
 
         # Find product ID and details from display
@@ -440,14 +444,16 @@ class AISalesWindow:
         product_display = self.combo_edit_product.get()
         
         if not product_display or product_display not in self.product_display_map:
-            messagebox.showwarning(t('msg_warning_title'), t('msg_select_valid_product'))
+            messagebox.showwarning(t('msg_warning_title'), t('msg_select_valid_product'), parent=self.root)
+            self.root.focus_force()
             return
             
         try:
             qty = float(self.ent_edit_qty.get())
             price = float(self.ent_edit_price.get())
         except ValueError:
-            messagebox.showerror(t('msg_error_title'), t('msg_numbers_req'))
+            messagebox.showerror(t('msg_error_title'), t('msg_numbers_req'), parent=self.root)
+            self.root.focus_force()
             return
             
         p_info = self.product_display_map[product_display]
@@ -486,13 +492,16 @@ class AISalesWindow:
         idx = self.tree.index(sel[0])
         inv = self.parsed_invoices[self.current_index]
         
-        if messagebox.askyesno(t('msg_confirm_title'), t('msg_remove_item_confirm')):
+        if messagebox.askyesno(t('msg_confirm_title'), t('msg_remove_item_confirm'), parent=self.root):
+            self.root.focus_force()
             deleted_item = inv.items.pop(idx)
             if hasattr(inv, 'deleted_lines'):
                 inv.deleted_lines.append(deleted_item.raw_text)
                 
             inv.total = sum(it.subtotal for it in inv.items)
             self.on_invoice_select(None)
+        else:
+            self.root.focus_force()
 
     # ==========================================================
     # CONFIRM / SKIP
@@ -505,7 +514,8 @@ class AISalesWindow:
 
         inv = self.parsed_invoices[self.current_index]
         if inv.confirmed:
-            messagebox.showinfo(t('msg_info_title'), t('msg_already_confirmed'))
+            messagebox.showinfo(t('msg_info_title'), t('msg_already_confirmed'), parent=self.root)
+            self.root.focus_force()
             return
 
         # Get final customer
@@ -519,7 +529,8 @@ class AISalesWindow:
         final_items = []
         for item in inv.items:
             if item.product_id == 0:
-                messagebox.showerror(t('msg_error_title'), t('msg_resolve_items'))
+                messagebox.showerror(t('msg_error_title'), t('msg_resolve_items'), parent=self.root)
+                self.root.focus_force()
                 return
             final_items.append({
                 'id': item.product_id,
@@ -543,9 +554,11 @@ class AISalesWindow:
             self._update_progress()
             self._select_next_unconfirmed()
 
-            messagebox.showinfo(t('msg_success_title'), t('msg_invoice_saved_short').format(inv_id=inv_id))
+            messagebox.showinfo(t('msg_success_title'), t('msg_invoice_saved_short').format(inv_id=inv_id), parent=self.root)
+            self.root.focus_force()
         except Exception as e:
-            messagebox.showerror(t('msg_error_title'), t('msg_failed_save').format(e=e))
+            messagebox.showerror(t('msg_error_title'), t('msg_failed_save').format(e=e), parent=self.root)
+            self.root.focus_force()
 
     def confirm_all(self):
         """Confirm all remaining unconfirmed invoices."""
@@ -553,12 +566,15 @@ class AISalesWindow:
                      if not inv.confirmed]
 
         if not remaining:
-            messagebox.showinfo(t('msg_done_title'), t('msg_all_confirmed'))
+            messagebox.showinfo(t('msg_done_title'), t('msg_all_confirmed'), parent=self.root)
+            self.root.focus_force()
             return
 
         if not messagebox.askyesno(t('msg_confirm_all_title'),
-                                    t('msg_confirm_all_body').format(count=len(remaining))):
+                                    t('msg_confirm_all_body').format(count=len(remaining)), parent=self.root):
+            self.root.focus_force()
             return
+        self.root.focus_force()
 
         saved = 0
         for idx in remaining:
@@ -567,7 +583,8 @@ class AISalesWindow:
             cust_id = inv.customer_id
 
             if any(item.product_id == 0 for item in inv.items):
-                messagebox.showerror(t('msg_error_title'), t('msg_skip_unresolved').format(name=inv.customer_name))
+                messagebox.showerror(t('msg_error_title'), t('msg_skip_unresolved').format(name=inv.customer_name), parent=self.root)
+                self.root.focus_force()
                 continue
 
             final_items = [{
@@ -590,14 +607,16 @@ class AISalesWindow:
                 continue
 
         self._update_progress()
-        messagebox.showinfo(t('msg_done_title'), t('msg_confirmed_all_success').format(count=saved))
+        messagebox.showinfo(t('msg_done_title'), t('msg_confirmed_all_success').format(count=saved), parent=self.root)
+        self.root.focus_force()
 
     def skip_current(self):
         """Skip the current invoice and delete it."""
         if self.current_index < 0:
             return
             
-        if messagebox.askyesno(t('msg_confirm_title'), t('msg_delete_invoice_confirm')):
+        if messagebox.askyesno(t('msg_confirm_title'), t('msg_delete_invoice_confirm'), parent=self.root):
+            self.root.focus_force()
             self.parsed_invoices.pop(self.current_index)
             self.invoice_listbox.delete(self.current_index)
             
@@ -622,6 +641,8 @@ class AISalesWindow:
                     self.invoice_listbox.selection_set(0)
                     self.invoice_listbox.see(0)
                     self.on_invoice_select(None)
+        else:
+            self.root.focus_force()
 
     # ==========================================================
     # HELPERS
@@ -684,6 +705,8 @@ class AISalesWindow:
 
 
 if __name__ == "__main__":
+    from src.utils.app_utils import set_app_icon
     root = tk.Tk()
+    set_app_icon(root)
     app = AISalesWindow(root)
     root.mainloop()
