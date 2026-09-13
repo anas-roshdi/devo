@@ -66,12 +66,15 @@ To run or build the project from source:
    cd devo
 
 2. **Set up a virtual environment and install dependencies:**
-  python -m venv .venv
-  source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-  pip install -r requirements.txt
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   pip install -r requirements.txt
 
 3. **Run the application:**
+   ```bash
    python main.py
 
 4. **Build the standalone executable:**
+   ```bash
    pyinstaller --noconfirm --onedir --windowed --icon="assets/devo.ico" --add-data "assets;assets" --add-data "locales;locales" --hidden-import "tkcalendar" --hidden-import "babel.numbers" --hidden-import "matplotlib" --hidden-import "pandas" --hidden-import "arabic_reshaper" --hidden-import "bidi.algorithm" --name "Devo" main.py
